@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>問題アプリ</title>
+<style>
+:root{
+  --bg:#1e1e1e; --card:#2d2d2d; --border:#404040; --text:#e0e0e0; --muted:#a0a0a0;
+  --accent:#4ec9b0; --success:#b5cea8; --warning:#f14c4c; --normal:#569cd6; --input:#3c3c3c;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{padding:14px 16px 8px;display:flex;align-items:center;gap:10px}
+header h1{font-size:19px;margin:0;font-weight:800}
+header .sp{flex:1}
+button{font-family:inherit}
+.iconbtn{background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);padding:7px 9px;cursor:pointer;line-height:0}
+.iconbtn svg{width:20px;height:20px;display:block}
+main{flex:1;padding:6px 14px 28px;max-width:720px;width:100%;margin:0 auto}
+.view{display:none}
+.view.on{display:block}
+.stats{font-size:13px;color:var(--accent);font-weight:700;text-align:center;padding:4px 2px 10px}
+.item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
+.item .ttl{font-size:17px;font-weight:800}
+.item .sub{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.5}
+.item .meta{color:var(--accent);font-size:12px;margin-top:5px;font-weight:700}
+.modebtn{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;color:var(--text);cursor:pointer}
+.modebtn .t{font-size:16px;font-weight:800}
+.modebtn .d{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.5}
+.modebtn:disabled{opacity:.45;cursor:default}
+select{background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px;font-size:15px;width:100%;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 18px;position:relative}
+.qmeta{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.qunit{font-size:12px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px}
+.qprog{font-size:12px;color:var(--muted);font-weight:700}
+.starbtn{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;line-height:0;padding:4px}
+.starbtn svg{width:24px;height:24px;display:block}
+.starbtn.on{color:var(--accent)}
+.qtext{font-size:19px;line-height:1.6;font-weight:700;white-space:pre-line}
+.choices{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+.choice{text-align:left;background:var(--input);border:1px solid var(--border);border-radius:12px;padding:13px 14px;color:var(--text);font-size:16px;cursor:pointer;line-height:1.5}
+.choice:disabled{cursor:default}
+.choice.correct{border-color:var(--success);color:var(--success);font-weight:800}
+.choice.wrong{border-color:var(--warning);color:var(--warning);font-weight:800}
+.choice.dim{opacity:.55}
+.panel{margin-top:16px;border:1px solid var(--border);border-radius:12px;padding:14px;display:none;line-height:1.7;font-size:15px}
+.panel.on{display:block}
+.panel .verdict{font-size:16px;font-weight:800;margin-bottom:6px}
+.panel .verdict.ok{color:var(--success)}
+.panel .verdict.ng{color:var(--warning)}
+.panel .trap{margin-top:10px;border-top:1px dashed var(--border);padding-top:10px;color:var(--muted)}
+.panel .trap b{color:var(--text)}
+.favprompt{margin-top:12px;border:1px solid var(--accent);border-radius:12px;padding:12px 14px;display:none;font-size:14px;line-height:1.6}
+.favprompt.on{display:block}
+.favprompt button{margin-top:8px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer}
+.nextbtn{display:none;width:100%;margin-top:16px;padding:14px;border-radius:12px;border:1px solid var(--accent);background:var(--card);color:var(--accent);font-size:16px;font-weight:800;cursor:pointer}
+.nextbtn.on{display:block}
+.plainbtn{display:block;width:100%;padding:13px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;margin-top:10px}
+.result-score{font-size:22px;font-weight:800;text-align:center;padding:16px 0 6px}
+.missitem{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:14px;line-height:1.6}
+.missitem .a{color:var(--success);font-weight:700}
+.missitem button{margin-top:6px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:700;cursor:pointer}
+.note{font-size:13px;color:var(--muted);line-height:1.8}
+.note b{color:var(--text)}
+.err{color:var(--warning);font-size:14px;line-height:1.7;padding:12px 0}
+h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
+.pill{background:none;border:1px solid var(--border);border-radius:999px;color:var(--muted);padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.pill.ok{color:var(--accent);border-color:var(--accent)}
+.pill.err{color:var(--warning);border-color:var(--warning)}
+.form label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px;font-weight:700}
+.form input{width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:15px}
+.form .rowbtns{display:flex;gap:10px;margin-top:14px}
+.form .rowbtns button{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;font-weight:700;cursor:pointer}
+#ghStatus{font-size:13px;color:var(--accent);margin-top:10px;line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hdrTitle">問題アプリ</h1>
+  <div class="sp"></div>
+  <button class="pill" id="syncPill">同期 未設定</button>
+  <button class="iconbtn" id="btnAbout" title="設定・このアプリについて" aria-label="設定・このアプリについて">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/></svg>
+  </button>
+</header>
+<main>
+  <!-- デッキ選択 -->
+  <section class="view" id="view-decks">
+    <div class="stats" id="deckStats"></div>
+    <div id="deckList"></div>
+    <div class="err" id="deckErr"></div>
+  </section>
+
+  <!-- デッキ内メニュー -->
+  <section class="view" id="view-deck">
+    <div class="stats" id="deckMenuStats"></div>
+    <h2 class="sec">順番モードの単元</h2>
+    <select id="unitSelect"></select>
+    <button class="modebtn" id="btnSeq"><span class="t">順番に解く</span><div class="d">単元ごとに並んだ問題を順に解きます。選んだ瞬間に正誤と解説が出ます。</div></button>
+    <button class="modebtn" id="btnReview"><span class="t">復習</span><div class="d" id="reviewDesc">お気に入りに登録した問題が、間隔を空けて出題されます。</div></button>
+    <button class="modebtn" id="btnRandom"><span class="t">ランダム</span><div class="d">全問題からランダムに出題します。</div></button>
+    <button class="plainbtn" id="btnBackDecks">デッキ選択へ戻る</button>
+  </section>
+
+  <!-- 出題 -->
+  <section class="view" id="view-quiz">
+    <div class="card">
+      <div class="qmeta">
+        <span class="qunit" id="qUnit"></span>
+        <span class="qprog" id="qProg"></span>
+        <button class="starbtn" id="btnStar" aria-label="お気に入り">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg>
+        </button>
+      </div>
+      <div class="qtext" id="qText"></div>
+      <div class="choices" id="qChoices"></div>
+      <div class="panel" id="qPanel">
+        <div class="verdict" id="qVerdict"></div>
+        <div id="qExplain"></div>
+        <div class="trap" id="qTrap" style="display:none"></div>
+      </div>
+      <div class="favprompt" id="favPrompt">
+        この問題をお気に入りに登録すると、毎日の復習に出るようになります。
+        <br><button id="btnFavPrompt">お気に入りに登録する</button>
+      </div>
+      <button class="nextbtn" id="btnNext">次へ</button>
+    </div>
+  </section>
+
+  <!-- 結果 -->
+  <section class="view" id="view-result">
+    <div class="result-score" id="resScore"></div>
+    <div class="stats" id="resSub"></div>
+    <h2 class="sec" id="resMissTitle">間違えた問題</h2>
+    <div id="resMiss"></div>
+    <button class="plainbtn" id="btnBackDeck">デッキへ戻る</button>
+  </section>
+
+  <!-- 設定・このアプリについて -->
+  <section class="view" id="view-about">
+    <div class="card" style="cursor:default">
+      <div class="note"><b>GitHub 同期（進捗の保存先）</b></div>
+      <div class="form">
+        <label>owner</label>
+        <input id="ghOwner" type="text" autocomplete="off">
+        <label>repo（進捗の保存先リポジトリ）</label>
+        <input id="ghRepo" type="text" autocomplete="off">
+        <label>branch</label>
+        <input id="ghBranch" type="text" autocomplete="off">
+        <label>GitHub トークン</label>
+        <input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_...">
+        <div class="rowbtns">
+          <button id="ghSave">保存して同期</button>
+          <button id="ghSyncNow">今すぐ同期</button>
+        </div>
+        <div id="ghStatus"></div>
+      </div>
+      <div class="note" style="margin-top:16px">
+        <p>進捗（お気に入り・復習の間隔・回答履歴）は、上のリポジトリの <b>quiz_progress.json</b> に保存されます。初期値は単語アプリと同じ保存先（Shuka314 / vocab-data）です。トークンが未設定の間は、この端末の中（localStorage）にだけ保存されます。</p>
+        <p><b>トークンの作り方</b>：GitHub の Settings → Developer settings → Personal access tokens → Fine-grained tokens で、Repository access を vocab-data だけにし、Permissions の Contents を Read and write にして発行します。単語アプリで使っているトークンが vocab-data にアクセスできるものなら、そのまま同じものを貼れます。トークンはこの端末のブラウザ内にだけ保存され、GitHub 以外には送られません。</p>
+        <p><b>注意</b>：単語アプリと同じく、同時に2つの端末・タブで開かないでください（進捗が競合します）。片方を閉じてから、もう片方を開いてください。</p>
+      </div>
+    </div>
+    <div class="card" style="cursor:default;margin-top:12px">
+      <div class="note">
+        <p><b>使い方</b><br>デッキ（教科）を選び、「順番に解く」「復習」「ランダム」のどれかで解きます。答えを選ぶと、その場で正誤と解説が出ます。問題の右上の星でお気に入りに登録すると、その問題は間隔反復（単語アプリと同じ梯子：正解で間隔が伸び、不正解で縮む）の対象になり、「復習」に出てきます。</p>
+        <p><b>デッキの追加</b><br>教科は decks フォルダの JSON ファイル1つで追加できます（decks/index.json に1行足すだけ）。アプリ本体の変更は要りません。</p>
+        <p><b>デッキの状態</b><br>「日本語文法」は、出典『初級を教える人のための日本語文法ハンドブック』の項目一覧（全42節＋コラム10件）を網羅した197問のデッキです（問題文・解説は出典の文章を写さず独自に作成）。「化学」は教科追加の構造確認用の最小サンプルです。</p>
+      </div>
+    </div>
+    <button class="plainbtn" id="btnAboutBack">戻る</button>
+  </section>
+</main>
+<script>
+'use strict';
+const LS_KEY = 'quizapp_v1_state';
+const $ = id => document.getElementById(id);
+
+function todayStr(d){
+  const t = d ? new Date(d) : new Date();
+  return t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+}
+function addDays(n){
+  const t = new Date(); t.setDate(t.getDate() + n);
+  return todayStr(t);
+}
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }catch(e){ return {}; }
+}
+function persist(){ try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
+function saveState(){ persist(); schedulePush(); }
+let state = loadState();
+state.favs = state.favs || {};   // {deckId: {qid: true}}
+state.srs  = state.srs  || {};   // {deckId: {qid: {interval, next_review, lapses}}}
+state.hist = state.hist || {};   // {deckId: {qid: {seen, correct}}}
+
+function isFav(deckId, qid){ return !!(state.favs[deckId] && state.favs[deckId][qid]); }
+function setFav(deckId, qid, on){
+  state.favs[deckId] = state.favs[deckId] || {};
+  if (on){ state.favs[deckId][qid] = true; }
+  else { delete state.favs[deckId][qid]; if (state.srs[deckId]) delete state.srs[deckId][qid]; }
+  saveState();
+}
+function isDue(deckId, qid){
+  if (!isFav(deckId, qid)) return false;
+  const s = state.srs[deckId] && state.srs[deckId][qid];
+  if (!s) return true; // 登録したてはすぐ出題
+  return (s.next_review || todayStr()) <= todayStr();
+}
+function dueList(deck){
+  return deck.questions.filter(q => isDue(deck.id, q.id));
+}
+// 単語アプリの梯子：正解=normal（0→1日、以降×2）／不正解=hard（間隔を半分、lapses+1）
+function applySRS(deckId, qid, correct){
+  if (!isFav(deckId, qid)) return;
+  state.srs[deckId] = state.srs[deckId] || {};
+  const s = state.srs[deckId][qid] || { interval: 0, next_review: todayStr(), lapses: 0 };
+  const cur = s.interval || 0;
+  if (correct){ s.interval = cur === 0 ? 1 : Math.min(cur * 2, 365); }
+  else { s.lapses = (s.lapses || 0) + 1; s.interval = cur <= 1 ? 0 : Math.floor(cur / 2); }
+  s.next_review = addDays(s.interval);
+  state.srs[deckId][qid] = s;
+}
+function recordHist(deckId, qid, correct){
+  state.hist[deckId] = state.hist[deckId] || {};
+  const h = state.hist[deckId][qid] || { seen: 0, correct: 0 };
+  h.seen += 1; if (correct) h.correct += 1;
+  state.hist[deckId][qid] = h;
+}
+
+// ---------- デッキ読み込み ----------
+let decks = [];       // 読み込み済みデッキオブジェクト
+let curDeck = null;   // 現在のデッキ
+let session = null;   // {list, idx, correctCount, misses:[{q, picked}]}
+
+async function loadDecks(){
+  const idx = await (await fetch('decks/index.json')).json();
+  decks = [];
+  for (const ent of idx.decks){
+    const d = await (await fetch(ent.file)).json();
+    d._file = ent.file;
+    decks.push(d);
+  }
+}
+function show(view){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  $(view).classList.add('on');
+  window.scrollTo(0,0);
+}
+function renderDeckList(){
+  const list = $('deckList'); list.innerHTML = '';
+  let totalDue = 0;
+  decks.forEach(d => {
+    const due = dueList(d).length; totalDue += due;
+    const favN = Object.keys(state.favs[d.id] || {}).length;
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = '<div class="ttl"></div><div class="sub"></div><div class="meta"></div>';
+    div.querySelector('.ttl').textContent = d.subject + '｜' + d.title;
+    div.querySelector('.sub').textContent = d.description || '';
+    div.querySelector('.meta').textContent = '全' + d.questions.length + '問 ／ お気に入り ' + favN + '件 ／ 今日の復習 ' + due + '件';
+    div.addEventListener('click', () => openDeck(d));
+    list.appendChild(div);
+  });
+  $('deckStats').textContent = totalDue > 0 ? '今日の復習が合計 ' + totalDue + ' 件あります' : '';
+}
+function openDeck(d){
+  curDeck = d;
+  $('hdrTitle').textContent = d.subject + '｜' + d.title;
+  const sel = $('unitSelect'); sel.innerHTML = '';
+  const units = [...new Set(d.questions.map(q => q.unit))];
+  const optAll = document.createElement('option'); optAll.value = ''; optAll.textContent = 'すべての単元'; sel.appendChild(optAll);
+  units.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; sel.appendChild(o); });
+  const due = dueList(d).length;
+  $('reviewDesc').textContent = 'お気に入りに登録した問題が、間隔を空けて出題されます。（今日の分：' + due + '件）';
+  $('btnReview').disabled = due === 0;
+  $('deckMenuStats').textContent = '全' + d.questions.length + '問 ／ お気に入り ' + Object.keys(state.favs[d.id] || {}).length + '件';
+  show('view-deck');
+}
+
+// ---------- 出題 ----------
+function shuffle(a){ const r = a.slice(); for (let i = r.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
+function startSession(list, modeLabel){
+  if (!list.length) return;
+  session = { list: list, idx: 0, correctCount: 0, misses: [], modeLabel: modeLabel, answered: false };
+  show('view-quiz');
+  renderQuestion();
+}
+function renderQuestion(){
+  const q = session.list[session.idx];
+  session.answered = false;
+  $('qUnit').textContent = q.unit;
+  $('qProg').textContent = (session.idx + 1) + ' / ' + session.list.length;
+  $('qText').textContent = q.question;
+  const star = $('btnStar');
+  star.classList.toggle('on', isFav(curDeck.id, q.id));
+  star.querySelector('svg').setAttribute('fill', isFav(curDeck.id, q.id) ? 'currentColor' : 'none');
+  const box = $('qChoices'); box.innerHTML = '';
+  q.choices.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'choice'; b.textContent = (i + 1) + '. ' + c;
+    b.addEventListener('click', () => answer(i));
+    box.appendChild(b);
+  });
+  $('qPanel').classList.remove('on');
+  $('favPrompt').classList.remove('on');
+  $('btnNext').classList.remove('on');
+  $('btnNext').textContent = session.idx + 1 >= session.list.length ? '結果を見る' : '次へ';
+}
+function answer(i){
+  if (session.answered) return;
+  session.answered = true;
+  const q = session.list[session.idx];
+  const correct = i === q.answer;
+  if (correct) session.correctCount += 1; else session.misses.push({ q: q, picked: i });
+  recordHist(curDeck.id, q.id, correct);
+  applySRS(curDeck.id, q.id, correct);
+  saveState();
+  const btns = $('qChoices').querySelectorAll('.choice');
+  btns.forEach((b, j) => {
+    b.disabled = true;
+    if (j === q.answer) b.classList.add('correct');
+    else if (j === i) b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+  const v = $('qVerdict');
+  v.textContent = correct ? '正解' : '不正解（正解は ' + (q.answer + 1) + '）';
+  v.className = 'verdict ' + (correct ? 'ok' : 'ng');
+  $('qExplain').textContent = q.explanation || '';
+  const trap = $('qTrap');
+  const note = (!correct && q.distractor_notes) ? q.distractor_notes[String(i)] : null;
+  if (note){ trap.style.display = 'block'; trap.innerHTML = '<b>選んだ選択肢について：</b>'; trap.appendChild(document.createTextNode(note)); }
+  else trap.style.display = 'none';
+  $('qPanel').classList.add('on');
+  if (!correct && !isFav(curDeck.id, q.id)) $('favPrompt').classList.add('on');
+  $('btnNext').classList.add('on');
+}
+function nextQuestion(){
+  session.idx += 1;
+  if (session.idx >= session.list.length) renderResult();
+  else renderQuestion();
+}
+function renderResult(){
+  $('resScore').textContent = session.correctCount + ' / ' + session.list.length + ' 問正解';
+  $('resSub').textContent = session.modeLabel;
+  const box = $('resMiss'); box.innerHTML = '';
+  $('resMissTitle').style.display = session.misses.length ? 'block' : 'none';
+  session.misses.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'missitem';
+    const qd = document.createElement('div'); qd.textContent = m.q.question;
+    const ad = document.createElement('div'); ad.className = 'a'; ad.textContent = '正解：' + m.q.choices[m.q.answer];
+    div.appendChild(qd); div.appendChild(ad);
+    if (!isFav(curDeck.id, m.q.id)){
+      const b = document.createElement('button');
+      b.textContent = 'お気に入りに登録する';
+      b.addEventListener('click', () => { setFav(curDeck.id, m.q.id, true); b.textContent = '登録しました'; b.disabled = true; });
+      div.appendChild(b);
+    }
+    box.appendChild(div);
+  });
+  show('view-result');
+}
+
+// ---------- イベント ----------
+$('btnSeq').addEventListener('click', () => {
+  const u = $('unitSelect').value;
+  const list = curDeck.questions.filter(q => !u || q.unit === u);
+  startSession(list, '順番モード' + (u ? '（' + u + '）' : ''));
+});
+$('btnReview').addEventListener('click', () => startSession(dueList(curDeck), '復習'));
+$('btnRandom').addEventListener('click', () => startSession(shuffle(curDeck.questions), 'ランダム'));
+$('btnNext').addEventListener('click', nextQuestion);
+$('btnStar').addEventListener('click', () => {
+  const q = session.list[session.idx];
+  setFav(curDeck.id, q.id, !isFav(curDeck.id, q.id));
+  renderQuestionStarOnly();
+});
+function renderQuestionStarOnly(){
+  const q = session.list[session.idx];
+  const on = isFav(curDeck.id, q.id);
+  $('btnStar').classList.toggle('on', on);
+  $('btnStar').querySelector('svg').setAttribute('fill', on ? 'currentColor' : 'none');
+  if (on) $('favPrompt').classList.remove('on');
+}
+$('btnFavPrompt').addEventListener('click', () => {
+  const q = session.list[session.idx];
+  setFav(curDeck.id, q.id, true);
+  renderQuestionStarOnly();
+});
+$('btnBackDecks').addEventListener('click', () => { $('hdrTitle').textContent = '問題アプリ'; renderDeckList(); show('view-decks'); });
+$('btnBackDeck').addEventListener('click', () => openDeck(curDeck));
+let lastView = 'view-decks';
+$('btnAbout').addEventListener('click', () => {
+  const cur = document.querySelector('.view.on');
+  if (cur) lastView = cur.id;
+  show('view-about');
+});
+$('btnAboutBack').addEventListener('click', () => show(lastView));
+
+// ===== GitHub 同期（単語アプリと同じ base-snapshot 方式） =====
+// 進捗は Shuka314/vocab-data の quiz_progress.json に保存する。
+// 起動時：base（前回同期した状態）と比べて、GitHubが新しければ取り込み、
+// 自分が新しければ送信、両方変わっていれば進捗優先でマージして送信。
+// 利用中：変更のたびに送信のみ。
+const PROGRESS_FILE = 'quiz_progress.json';
+let ghCfg = null;
+try { ghCfg = JSON.parse(localStorage.getItem('quizGhCfg') || 'null'); } catch(e){}
+if (!ghCfg) ghCfg = { owner: 'Shuka314', repo: 'vocab-data', token: '', branch: 'main' };
+function ghReady(){ return !!(ghCfg && ghCfg.owner && ghCfg.repo && ghCfg.token); }
+function b64enc(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64dec(b64){ return decodeURIComponent(escape(atob(b64.replace(/\s/g, '')))); }
+let ghBase = null; // {sha, state}
+try { ghBase = JSON.parse(localStorage.getItem('quizGhBase') || 'null'); } catch(e){}
+function saveBase(){ try { localStorage.setItem('quizGhBase', JSON.stringify(ghBase)); } catch(e){} }
+function progressSnapshot(){ return { favs: state.favs || {}, srs: state.srs || {}, hist: state.hist || {} }; }
+function canonState(s){ return JSON.stringify({ favs: s.favs || {}, srs: s.srs || {}, hist: s.hist || {} }); }
+function sameState(a, b){ return canonState(a) === canonState(b); }
+function pendingSync(){ if (!ghBase) return !sameState(progressSnapshot(), { favs:{}, srs:{}, hist:{} }); return !sameState(progressSnapshot(), ghBase.state); }
+
+let syncBusy = false, syncErr = '', lastSync = 0;
+function ghStatus(msg){ const el = $('ghStatus'); if (el) el.textContent = msg; }
+function syncUi(){
+  const p = $('syncPill'); if (!p) return;
+  p.classList.remove('ok', 'err');
+  if (!ghReady()) p.textContent = '同期 未設定';
+  else if (syncBusy) p.textContent = '同期中…';
+  else if (syncErr){ p.textContent = '同期 失敗（タップで再試行）'; p.classList.add('err'); }
+  else if (pendingSync()) p.textContent = '未送信あり（タップで同期）';
+  else { p.textContent = '同期済み'; p.classList.add('ok'); }
+}
+async function ghApi(method, payload){
+  const url = 'https://api.github.com/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + PROGRESS_FILE + (method === 'GET' ? ('?ref=' + (ghCfg.branch || 'main') + '&_=' + Date.now()) : '');
+  const opt = { method: method, headers: { 'Authorization': 'Bearer ' + ghCfg.token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } };
+  if (method === 'GET') opt.cache = 'no-store';
+  if (payload){ opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(payload); }
+  const res = await fetch(url, opt);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('GitHub API ' + res.status);
+  return res.json();
+}
+async function ghGetProgress(){
+  const j = await ghApi('GET');
+  if (!j) return null;
+  return { state: JSON.parse(b64dec(j.content)), sha: j.sha };
+}
+async function ghPutProgress(sha){
+  const payload = { message: 'sync ' + PROGRESS_FILE, content: b64enc(JSON.stringify(progressSnapshot(), null, 2)), branch: ghCfg.branch || 'main' };
+  if (sha) payload.sha = sha;
+  const j = await ghApi('PUT', payload);
+  if (!j) throw new Error('GitHub API 404（リポジトリが見えていません）');
+  return j && j.content ? j.content.sha : null;
+}
+function mergeProgress(local, remote){
+  const out = { favs: {}, srs: {}, hist: {} };
+  const keys = new Set();
+  [local, remote].forEach(s => { ['favs','srs','hist'].forEach(k => Object.keys(s[k] || {}).forEach(d => keys.add(d))); });
+  keys.forEach(dk => {
+    const f = {};
+    [local, remote].forEach(s => Object.keys((s.favs || {})[dk] || {}).forEach(k => { f[k] = true; }));
+    out.favs[dk] = f; // お気に入りは和集合（どちらかで登録されていれば残す）
+    const sm = {};
+    const ls = (local.srs || {})[dk] || {}, rs = (remote.srs || {})[dk] || {};
+    new Set([...Object.keys(ls), ...Object.keys(rs)]).forEach(k => {
+      const a = ls[k], b = rs[k];
+      if (!a) sm[k] = b; else if (!b) sm[k] = a;
+      else {
+        const sa = [a.interval || 0, String(a.next_review || '')], sb = [b.interval || 0, String(b.next_review || '')];
+        sm[k] = (sb[0] > sa[0] || (sb[0] === sa[0] && sb[1] >= sa[1])) ? b : a; // 間隔が進んでいる方を優先
+      }
+    });
+    Object.keys(sm).forEach(k => { if (!f[k]) delete sm[k]; });
+    out.srs[dk] = sm;
+    const hm = {};
+    const lh = (local.hist || {})[dk] || {}, rh = (remote.hist || {})[dk] || {};
+    new Set([...Object.keys(lh), ...Object.keys(rh)]).forEach(k => {
+      const a = lh[k], b = rh[k];
+      if (!a) hm[k] = b; else if (!b) hm[k] = a; else hm[k] = ((b.seen || 0) > (a.seen || 0)) ? b : a;
+    });
+    out.hist[dk] = hm;
+  });
+  return out;
+}
+function adoptProgress(s){
+  state.favs = s.favs || {}; state.srs = s.srs || {}; state.hist = s.hist || {};
+  persist();
+}
+async function syncNow(){
+  if (!ghReady() || syncBusy) return;
+  syncBusy = true; syncErr = ''; syncUi();
+  try {
+    const remote = await ghGetProgress();
+    if (!remote){
+      const sha = await ghPutProgress(null);
+      ghBase = { sha: sha, state: progressSnapshot() }; saveBase();
+    } else {
+      const localChanged = !ghBase || !sameState(progressSnapshot(), ghBase.state);
+      const remoteChanged = !ghBase || remote.sha !== ghBase.sha;
+      if (remoteChanged && !localChanged){
+        adoptProgress(remote.state);
+        ghBase = { sha: remote.sha, state: remote.state }; saveBase();
+      } else if (localChanged && !remoteChanged){
+        const sha = await ghPutProgress(remote.sha);
+        ghBase = { sha: sha, state: progressSnapshot() }; saveBase();
+      } else if (localChanged && remoteChanged){
+        adoptProgress(mergeProgress(progressSnapshot(), remote.state));
+        const sha = await ghPutProgress(remote.sha);
+        ghBase = { sha: sha, state: progressSnapshot() }; saveBase();
+      } else {
+        ghBase = { sha: remote.sha, state: remote.state }; saveBase();
+      }
+    }
+    lastSync = Date.now();
+    ghStatus('同期完了 ' + new Date().toLocaleTimeString());
+  } catch(e){
+    syncErr = e.message || 'error';
+    ghStatus('同期失敗（' + syncErr + '）。owner・repo・トークンの権限を確認してください。');
+  }
+  syncBusy = false; syncUi();
+  renderDeckList();
+}
+let pushTimer = null;
+function schedulePush(){
+  if (!ghReady()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushProgress, 1200);
+}
+async function pushProgress(){
+  if (!ghReady()) return;
+  if (syncBusy){ schedulePush(); return; }
+  if (!pendingSync()){ syncUi(); return; }
+  if (!ghBase){ syncNow(); return; }
+  syncBusy = true; syncUi();
+  try {
+    const sha = await ghPutProgress(ghBase.sha);
+    ghBase = { sha: sha, state: progressSnapshot() }; saveBase();
+    lastSync = Date.now();
+  } catch(e){
+    syncBusy = false;
+    syncNow(); // 競合の可能性 → 取り込み＋マージ＋送信に切り替え
+    return;
+  }
+  syncBusy = false; syncUi();
+}
+function fillGhForm(){
+  $('ghOwner').value = ghCfg.owner || 'Shuka314';
+  $('ghRepo').value = ghCfg.repo || 'vocab-data';
+  $('ghBranch').value = ghCfg.branch || 'main';
+  $('ghToken').value = ghCfg.token || '';
+}
+function applyGhForm(){
+  ghCfg = { owner: $('ghOwner').value.trim() || 'Shuka314', repo: $('ghRepo').value.trim() || 'vocab-data', token: $('ghToken').value.trim(), branch: $('ghBranch').value.trim() || 'main' };
+  try { localStorage.setItem('quizGhCfg', JSON.stringify(ghCfg)); } catch(e){}
+  return ghReady();
+}
+$('ghSave').addEventListener('click', async () => {
+  if (applyGhForm()){ ghBase = null; saveBase(); await syncNow(); }
+  else ghStatus('トークンを入力してください。');
+  syncUi();
+});
+$('ghSyncNow').addEventListener('click', async () => { applyGhForm(); await syncNow(); });
+$('syncPill').addEventListener('click', async () => {
+  if (!ghReady()){
+    const cur = document.querySelector('.view.on'); if (cur) lastView = cur.id;
+    fillGhForm(); show('view-about'); return;
+  }
+  await syncNow();
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && ghReady() && !syncBusy && (pendingSync() || Date.now() - lastSync > 60000)) syncNow();
+});
+window.addEventListener('online', () => { if (ghReady() && !syncBusy) syncNow(); });
+
+// ---------- 起動 ----------
+loadDecks().then(async () => {
+  renderDeckList(); show('view-decks');
+  fillGhForm(); syncUi();
+  if (ghReady()) await syncNow();
+})
+.catch(e => { $('deckErr').textContent = 'デッキの読み込みに失敗しました。' + e.message; show('view-decks'); });
+</script>
+</body>
+</html>
