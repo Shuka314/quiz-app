@@ -23,6 +23,11 @@ body,.card,.item,.modebtn,.add,.pill{transition:background-color .35s ease,borde
 header{padding:10px 14px 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 header h1{font-size:17px;margin:0}
 header .sp{flex:1}
+header h1{cursor:pointer}
+.backbar{margin-bottom:2px}
+.backbtn{background:none;border:none;color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;padding:4px 6px 4px 0;display:inline-flex;align-items:center;gap:1px}
+.backbtn svg{width:18px;height:18px;display:block}
+.bar.qbar{margin:0 0 14px}
 button{font-family:inherit;transition:transform .08s ease,background-color .2s ease,border-color .2s ease,color .2s ease;touch-action:manipulation}
 button:active{transform:scale(.965)}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
@@ -106,7 +111,7 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
 </head>
 <body>
 <header>
-  <h1><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> <span id="hdrTitle">問題アプリ</span></h1>
+  <h1 id="hdrHome" title="タイトルへ戻る"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> <span id="hdrTitle">問題アプリ</span></h1>
   <div class="sp"></div>
   <button class="pill" id="syncPill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 未設定</button>
   <select id="themeSel" aria-label="テーマ">
@@ -138,16 +143,18 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
 
   <!-- デッキ内メニュー -->
   <section class="view" id="view-deck">
+    <div class="backbar"><button class="backbtn" id="btnDeckHome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>デッキ選択</button></div>
     <div id="deckMenuStats"></div>
+    <button class="modebtn" id="btnResume" style="display:none"><span class="t">続きから解く</span><div class="d" id="resumeDesc"></div></button>
     <button class="modebtn" id="btnReview"><span class="t">復習</span><div class="d" id="reviewDesc">お気に入りに登録した問題が、間隔を空けて出題されます。</div></button>
     <button class="modebtn" id="btnRandom"><span class="t">ランダム</span><div class="d">全問題からランダムに出題します。</div></button>
     <h2 class="sec">章（単元）一覧 ― タップでその章の問題、「まとめを読む」で全体像を先に確認できます</h2>
     <div id="chapterList"></div>
-    <button class="plainbtn" id="btnBackDecks">デッキ選択へ戻る</button>
   </section>
 
   <!-- 章のまとめ -->
   <section class="view" id="view-summary">
+    <div class="backbar"><button class="backbtn" id="btnSumTopBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg><span id="sumBackLabel">章一覧</span></button></div>
     <div class="card">
       <div class="sum-unit" id="sumUnit"></div>
       <p class="sum-intro" id="sumIntro"></p>
@@ -159,11 +166,11 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
       <ul class="sum-list" id="sumTips"></ul>
     </div>
     <button class="plainbtn sum-start" id="btnSumStart">この章の問題を解く</button>
-    <button class="plainbtn" id="btnSumBack">章一覧へ戻る</button>
   </section>
 
   <!-- 出題 -->
   <section class="view" id="view-quiz">
+    <div class="backbar"><button class="backbtn" id="btnQuizBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>章一覧</button></div>
     <div class="card">
       <div class="qmeta">
         <span class="qunit" id="qUnit"></span>
@@ -172,6 +179,7 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg>
         </button>
       </div>
+      <div class="bar qbar"><i id="qBarFill"></i></div>
       <div class="qtext" id="qText"></div>
       <div class="choices" id="qChoices"></div>
       <div class="panel" id="qPanel">
@@ -192,15 +200,17 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
 
   <!-- 結果 -->
   <section class="view" id="view-result">
+    <div class="backbar"><button class="backbtn" id="btnResTopBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>章一覧</button></div>
     <div class="result-score" id="resScore"></div>
     <div class="stats" id="resSub"></div>
     <h2 class="sec" id="resMissTitle">間違えた問題</h2>
     <div id="resMiss"></div>
-    <button class="plainbtn" id="btnBackDeck">デッキへ戻る</button>
+    <button class="plainbtn" id="btnResRetry" style="display:none"></button>
   </section>
 
   <!-- 設定・このアプリについて -->
   <section class="view" id="view-about">
+    <div class="backbar"><button class="backbtn" id="btnAboutTopBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>戻る</button></div>
     <form class="add" id="ghForm">
       <div><b><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> GitHub同期</b> <span class="note">進捗は quiz_progress.json ／ デッキは quiz_decks フォルダ（どちらも保存先リポジトリ内）</span></div>
       <input id="ghOwner" type="text" autocomplete="off" placeholder="GitHubユーザー名（owner）">
@@ -228,7 +238,6 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
         <p><b>デッキの状態</b><br>「日本語文法」は、出典『初級を教える人のための日本語文法ハンドブック』の項目一覧（全42節＋コラム10件）を網羅した394問のデッキです（問題文・解説は出典の文章を写さず独自に作成）。全42節には、問題を解く前に読める「まとめ解説」も付いています。「化学」は教科追加の構造確認用の最小サンプルです。</p>
       </div>
     </div>
-    <button class="plainbtn" id="btnAboutBack">戻る</button>
   </section>
 </main>
 <script>
@@ -298,7 +307,10 @@ const DECK_INDEX_PATH = DECK_DIR + '/index.json';
 const DECK_CACHE_KEY = 'quizDeckCacheV1';
 let decks = [];       // 読み込み済みデッキオブジェクト
 let curDeck = null;   // 現在のデッキ
-let session = null;   // {list, idx, modeLabel, answers:{idx: pickedIndex}}
+let session = null;   // 現在のセッション {list, idx, modeLabel, answers:{idx: pickedIndex}, key, deckId, restart, done}
+let sessions = {};    // deckId|key -> 未完了セッション（途中で離れても同じ章から再開できるよう保持）
+let resumeTarget = null;
+let resultRestart = null;
 
 function deckPathOf(ent){
   const f = ent.file || (ent.id + '.json');
@@ -465,17 +477,20 @@ function renderChapterList(){
     div.addEventListener('click', onClick);
     box.appendChild(div);
   };
-  mk('すべての章', unitStats(curDeck, null), () => startSession(curDeck.questions.slice(), '順番モード（すべての章）'), null);
+  mk('すべての章', unitStats(curDeck, null), () => startSession(curDeck.questions.slice(), '順番モード（すべての章）', 'seqall', { type: 'all' }), null);
   deckUnits(curDeck).forEach(u => {
-    mk(u, unitStats(curDeck, u), () => startSession(curDeck.questions.filter(q => q.unit === u), '順番モード（' + u + '）'), u);
+    mk(u, unitStats(curDeck, u), () => startSession(curDeck.questions.filter(q => q.unit === u), '順番モード（' + u + '）', 'seq:' + u, { type: 'unit', unit: u }), u);
   });
 }
 // ---------- 章のまとめ ----------
 let sumUnit = null;
-function openSummary(unit){
+let sumReturn = 'deck'; // 'deck' = 章一覧から / 'quiz' = 問題画面から（戻り先が変わる）
+function openSummary(unit, from){
   const s = curDeck.summaries && curDeck.summaries[unit];
   if (!s) return;
   sumUnit = unit;
+  sumReturn = from || 'deck';
+  $('sumBackLabel').textContent = sumReturn === 'quiz' ? '問題に戻る' : '章一覧';
   $('sumUnit').textContent = unit + ' のまとめ';
   $('sumIntro').textContent = s.intro || '';
   const fill = (id, arr) => {
@@ -489,9 +504,12 @@ function openSummary(unit){
   window.scrollTo(0, 0);
 }
 $('btnSumStart').addEventListener('click', () => {
-  if (sumUnit) startSession(curDeck.questions.filter(q => q.unit === sumUnit), '順番モード（' + sumUnit + '）');
+  if (sumUnit) startSession(curDeck.questions.filter(q => q.unit === sumUnit), '順番モード（' + sumUnit + '）', 'seq:' + sumUnit, { type: 'unit', unit: sumUnit });
 });
-$('btnSumBack').addEventListener('click', () => show('view-deck'));
+$('btnSumTopBack').addEventListener('click', () => {
+  if (sumReturn === 'quiz' && session && !session.done){ show('view-quiz'); renderQuestion(); }
+  else openDeck(curDeck);
+});
 function openDeck(d){
   curDeck = d;
   $('hdrTitle').textContent = deckDisplayName(d);
@@ -500,23 +518,47 @@ function openDeck(d){
   $('btnReview').disabled = due === 0;
   const ms = $('deckMenuStats'); ms.innerHTML = '';
   ms.appendChild(statChips(unitStats(d, null), null));
+  // 未完了のセッションがこのデッキにあれば「続きから解く」を出す（最近使ったもの）
+  let best = null;
+  Object.keys(sessions).forEach(k => {
+    const s = sessions[k];
+    if (s.deckId === d.id && !s.done && (!best || (s.lastUsed || 0) > (best.lastUsed || 0))) best = s;
+  });
+  resumeTarget = best;
+  if (best){
+    $('resumeDesc').textContent = best.modeLabel + '：' + Object.keys(best.answers).length + ' / ' + best.list.length + ' 問回答済み（' + (best.idx + 1) + '問目から）';
+    $('btnResume').style.display = 'block';
+  } else {
+    $('btnResume').style.display = 'none';
+  }
   renderChapterList();
   show('view-deck');
 }
 
 // ---------- 出題 ----------
 function shuffle(a){ const r = a.slice(); for (let i = r.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
-function startSession(list, modeLabel){
+function skey(deckId, key){ return deckId + '|' + key; }
+function startSession(list, modeLabel, key, restart, force){
   if (!list.length) return;
-  session = { list: list, idx: 0, modeLabel: modeLabel, answers: {} };
+  const k = key ? skey(curDeck.id, key) : null;
+  if (!force && k && sessions[k] && !sessions[k].done){
+    session = sessions[k]; // 未完了の同じセッションがあれば、回答状態を保ったまま再開する
+  } else {
+    session = { list: list, idx: 0, modeLabel: modeLabel, answers: {}, key: key || null, deckId: curDeck.id, restart: restart || null, done: false };
+    if (k) sessions[k] = session;
+  }
+  session.lastUsed = Date.now();
   show('view-quiz');
   renderQuestion();
 }
 function renderQuestion(){
   const q = session.list[session.idx];
   const picked = session.answers[session.idx];
+  session.lastUsed = Date.now();
   $('qUnit').textContent = q.unit;
+  $('qUnit').style.cursor = (curDeck.summaries && curDeck.summaries[q.unit]) ? 'pointer' : '';
   $('qProg').textContent = (session.idx + 1) + ' / ' + session.list.length;
+  $('qBarFill').style.width = session.list.length ? Math.round(Object.keys(session.answers).length / session.list.length * 100) + '%' : '0%';
   $('qText').textContent = q.question;
   const star = $('btnStar');
   star.classList.toggle('on', isFav(curDeck.id, q.id));
@@ -573,6 +615,7 @@ function nextQuestion(){
   else { session.idx += 1; renderQuestion(); }
 }
 function renderResult(){
+  session.done = true; // 終わったセッションは再開対象にしない（章タップで最初から始まる）
   let answered = 0, correctCount = 0;
   const misses = [];
   session.list.forEach((q, i) => {
@@ -599,12 +642,33 @@ function renderResult(){
     }
     box.appendChild(div);
   });
+  // 「もう一度」用に、同じ条件で組み直したリストを用意する
+  resultRestart = null;
+  if (session.restart){
+    const r = session.restart;
+    let list = null, label = 'もう一度';
+    if (r.type === 'unit'){ list = curDeck.questions.filter(q => q.unit === r.unit); label = 'この章をもう一度'; }
+    else if (r.type === 'all'){ list = curDeck.questions.slice(); }
+    else if (r.type === 'review'){ list = dueList(curDeck); label = '復習をもう一度'; }
+    else if (r.type === 'random'){ list = shuffle(curDeck.questions); }
+    if (list && list.length){ resultRestart = { list: list }; $('btnResRetry').textContent = label; $('btnResRetry').style.display = 'block'; }
+    else $('btnResRetry').style.display = 'none';
+  } else {
+    $('btnResRetry').style.display = 'none';
+  }
   show('view-result');
 }
 
 // ---------- イベント ----------
-$('btnReview').addEventListener('click', () => startSession(dueList(curDeck), '復習'));
-$('btnRandom').addEventListener('click', () => startSession(shuffle(curDeck.questions), 'ランダム'));
+$('btnReview').addEventListener('click', () => startSession(dueList(curDeck), '復習', 'review', { type: 'review' }));
+$('btnRandom').addEventListener('click', () => startSession(shuffle(curDeck.questions), 'ランダム', 'random', { type: 'random' }));
+$('btnResume').addEventListener('click', () => {
+  if (!resumeTarget) return;
+  session = resumeTarget;
+  session.lastUsed = Date.now();
+  show('view-quiz');
+  renderQuestion();
+});
 $('btnPrev').addEventListener('click', prevQuestion);
 $('btnNextQ').addEventListener('click', nextQuestion);
 $('btnStar').addEventListener('click', () => {
@@ -624,15 +688,33 @@ $('btnFavPrompt').addEventListener('click', () => {
   setFav(curDeck.id, q.id, true);
   renderQuestionStarOnly();
 });
-$('btnBackDecks').addEventListener('click', () => { $('hdrTitle').textContent = '問題アプリ'; renderDeckList(); show('view-decks'); });
-$('btnBackDeck').addEventListener('click', () => openDeck(curDeck));
 let lastView = 'view-decks';
+// タイトル（デッキ選択）へ戻る。途中のセッションは保持され、同じ章から再開できる。
+function goHome(){
+  lastView = 'view-decks';
+  $('hdrTitle').textContent = '問題アプリ';
+  renderDeckList();
+  show('view-decks');
+}
+$('hdrHome').addEventListener('click', goHome);
+$('btnDeckHome').addEventListener('click', goHome);
+$('btnQuizBack').addEventListener('click', () => openDeck(curDeck));
+$('btnResTopBack').addEventListener('click', () => openDeck(curDeck));
+$('btnResRetry').addEventListener('click', () => {
+  if (!resultRestart || !session) return;
+  startSession(resultRestart.list, session.modeLabel, session.key, session.restart, true);
+});
+$('qUnit').addEventListener('click', () => {
+  if (!session) return;
+  const q = session.list[session.idx];
+  if (q && curDeck.summaries && curDeck.summaries[q.unit]) openSummary(q.unit, 'quiz');
+});
 $('btnAbout').addEventListener('click', () => {
   const cur = document.querySelector('.view.on');
   if (cur) lastView = cur.id;
   show('view-about');
 });
-$('btnAboutBack').addEventListener('click', () => show(lastView));
+$('btnAboutTopBack').addEventListener('click', () => show(lastView));
 
 // ===== GitHub 同期（単語アプリと同じ base-snapshot 方式） =====
 // 進捗は Shuka314/app-data の quiz_progress.json に保存する。
