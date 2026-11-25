@@ -212,7 +212,7 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
   <section class="view" id="view-about">
     <div class="backbar"><button class="backbtn" id="btnAboutTopBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>戻る</button></div>
     <form class="add" id="ghForm">
-      <div><b><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> GitHub同期</b> <span class="note">進捗は quiz_progress.json ／ デッキは quiz_decks フォルダ（どちらも保存先リポジトリ内）</span></div>
+      <div><b><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> GitHub同期</b></div>
       <input id="ghOwner" type="text" autocomplete="off" placeholder="GitHubユーザー名（owner）">
       <input id="ghRepo" type="text" autocomplete="off" placeholder="リポジトリ名（Private）">
       <input id="ghToken" type="password" autocomplete="off" placeholder="トークン（Contents: Read and write）">
@@ -223,21 +223,6 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
       </div>
       <div class="note" id="ghStatus">未設定：ローカル保存のみで動作中</div>
     </form>
-    <div class="card" style="cursor:default;margin-top:12px">
-      <div class="note">
-        <p>進捗（お気に入り・復習の間隔・回答履歴）は、上のリポジトリの <b>quiz_progress.json</b> に保存されます。初期値は単語アプリと同じ保存先（Shuka314 / app-data）です。トークンが未設定の間は、この端末の中（localStorage）にだけ保存されます。</p>
-        <p><b>デッキも同じ場所にあります</b>：問題デッキは他人に見られないよう、公開リポジトリには置かず、同じプライベートリポジトリの <b>quiz_decks</b> フォルダに置いてあります。読み込みには上のトークン（進捗の同期と共通）を使います。トークンが未設定だとデッキは読めません（一度読み込んだデッキは端末にキャッシュされ、次回はキャッシュが先に表示されます）。</p>
-        <p><b>トークンの作り方</b>：GitHub の Settings → Developer settings → Personal access tokens → Fine-grained tokens で、Repository access を app-data だけにし、Permissions の Contents を Read and write にして発行します。単語アプリで使っているトークンが app-data にアクセスできるものなら、そのまま同じものを貼れます。トークンはこの端末のブラウザ内にだけ保存され、GitHub 以外には送られません。</p>
-        <p><b>注意</b>：単語アプリと同じく、同時に2つの端末・タブで開かないでください（進捗が競合します）。片方を閉じてから、もう片方を開いてください。</p>
-      </div>
-    </div>
-    <div class="card" style="cursor:default;margin-top:12px">
-      <div class="note">
-        <p><b>使い方</b><br>デッキ（教科）を選ぶと、章（単元）の一覧が出ます。各章には問題数・回答済み数・正答率・お気に入り数が表示され、好きな章をタップしてそこから始められます。各章の「まとめを読む」からは、その章の全体像（テーマ・種類・押さえるポイント）を先に読むことができ、まとめの末尾からそのままその章の問題に入れます。「復習」「ランダム」も選べます。答えを選ぶと、その場で正誤と解説が出ます。問題画面の下のボタンで前の問題・次の問題へ移動でき、解き終わった問題に戻ると自分の回答と解説がそのまま見えます。問題の右上の星でお気に入りに登録すると、その問題は間隔反復（単語アプリと同じ梯子：正解で間隔が伸び、不正解で縮む）の対象になり、「復習」に出てきます。</p>
-        <p><b>デッキの追加</b><br>教科は、プライベートリポジトリ（app-data）の quiz_decks フォルダに JSON ファイルを1つ置き、quiz_decks/index.json に1行足すだけで追加できます。アプリ本体の変更は要りません。</p>
-        <p><b>デッキの状態</b><br>「日本語文法」は、出典『初級を教える人のための日本語文法ハンドブック』の項目一覧（全42節＋コラム10件）を網羅した394問のデッキです（問題文・解説は出典の文章を写さず独自に作成）。全42節には、問題を解く前に読める「まとめ解説」も付いています。「化学」は教科追加の構造確認用の最小サンプルです。</p>
-      </div>
-    </div>
   </section>
 </main>
 <script>
