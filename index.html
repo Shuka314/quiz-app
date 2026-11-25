@@ -55,8 +55,11 @@ select{background:var(--input);color:var(--text);border:1px solid var(--border);
 .favprompt{margin-top:12px;border:1px solid var(--accent);border-radius:12px;padding:12px 14px;display:none;font-size:14px;line-height:1.6}
 .favprompt.on{display:block}
 .favprompt button{margin-top:8px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer}
-.nextbtn{display:none;width:100%;margin-top:16px;padding:14px;border-radius:12px;border:1px solid var(--accent);background:var(--card);color:var(--accent);font-size:16px;font-weight:800;cursor:pointer}
-.nextbtn.on{display:block}
+.qnav{display:flex;gap:10px;margin-top:16px}
+.navbtn{flex:1;padding:13px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:800;cursor:pointer}
+.navbtn:disabled{opacity:.4;cursor:default}
+.bar{height:5px;background:var(--input);border-radius:999px;margin-top:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:999px}
 .plainbtn{display:block;width:100%;padding:13px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;margin-top:10px}
 .result-score{font-size:22px;font-weight:800;text-align:center;padding:16px 0 6px}
 .missitem{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:14px;line-height:1.6}
@@ -96,11 +99,10 @@ h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
   <!-- デッキ内メニュー -->
   <section class="view" id="view-deck">
     <div class="stats" id="deckMenuStats"></div>
-    <h2 class="sec">順番モードの単元</h2>
-    <select id="unitSelect"></select>
-    <button class="modebtn" id="btnSeq"><span class="t">順番に解く</span><div class="d">単元ごとに並んだ問題を順に解きます。選んだ瞬間に正誤と解説が出ます。</div></button>
     <button class="modebtn" id="btnReview"><span class="t">復習</span><div class="d" id="reviewDesc">お気に入りに登録した問題が、間隔を空けて出題されます。</div></button>
     <button class="modebtn" id="btnRandom"><span class="t">ランダム</span><div class="d">全問題からランダムに出題します。</div></button>
+    <h2 class="sec">章（単元）一覧 ― タップした章から始められます</h2>
+    <div id="chapterList"></div>
     <button class="plainbtn" id="btnBackDecks">デッキ選択へ戻る</button>
   </section>
 
@@ -125,7 +127,10 @@ h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
         この問題をお気に入りに登録すると、毎日の復習に出るようになります。
         <br><button id="btnFavPrompt">お気に入りに登録する</button>
       </div>
-      <button class="nextbtn" id="btnNext">次へ</button>
+      <div class="qnav">
+        <button class="navbtn" id="btnPrev">← 前の問題</button>
+        <button class="navbtn" id="btnNextQ">次の問題 →</button>
+      </div>
     </div>
   </section>
 
@@ -165,7 +170,7 @@ h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
     </div>
     <div class="card" style="cursor:default;margin-top:12px">
       <div class="note">
-        <p><b>使い方</b><br>デッキ（教科）を選び、「順番に解く」「復習」「ランダム」のどれかで解きます。答えを選ぶと、その場で正誤と解説が出ます。問題の右上の星でお気に入りに登録すると、その問題は間隔反復（単語アプリと同じ梯子：正解で間隔が伸び、不正解で縮む）の対象になり、「復習」に出てきます。</p>
+        <p><b>使い方</b><br>デッキ（教科）を選ぶと、章（単元）の一覧が出ます。各章には問題数・回答済み数・正答率・お気に入り数が表示され、好きな章をタップしてそこから始められます。「復習」「ランダム」も選べます。答えを選ぶと、その場で正誤と解説が出ます。問題画面の下のボタンで前の問題・次の問題へ移動でき、解き終わった問題に戻ると自分の回答と解説がそのまま見えます。問題の右上の星でお気に入りに登録すると、その問題は間隔反復（単語アプリと同じ梯子：正解で間隔が伸び、不正解で縮む）の対象になり、「復習」に出てきます。</p>
         <p><b>デッキの追加</b><br>教科は decks フォルダの JSON ファイル1つで追加できます（decks/index.json に1行足すだけ）。アプリ本体の変更は要りません。</p>
         <p><b>デッキの状態</b><br>「日本語文法」は、出典『初級を教える人のための日本語文法ハンドブック』の項目一覧（全42節＋コラム10件）を網羅した197問のデッキです（問題文・解説は出典の文章を写さず独自に作成）。「化学」は教科追加の構造確認用の最小サンプルです。</p>
       </div>
@@ -233,7 +238,7 @@ function recordHist(deckId, qid, correct){
 // ---------- デッキ読み込み ----------
 let decks = [];       // 読み込み済みデッキオブジェクト
 let curDeck = null;   // 現在のデッキ
-let session = null;   // {list, idx, correctCount, misses:[{q, picked}]}
+let session = null;   // {list, idx, modeLabel, answers:{idx: pickedIndex}}
 
 async function loadDecks(){
   const idx = await (await fetch('decks/index.json')).json();
@@ -249,34 +254,74 @@ function show(view){
   $(view).classList.add('on');
   window.scrollTo(0,0);
 }
+function deckDisplayName(d){
+  return (d.subject && d.subject !== d.title) ? d.subject + '｜' + d.title : d.title;
+}
+function deckUnits(deck){
+  const seen = [], set = new Set();
+  deck.questions.forEach(q => { if (!set.has(q.unit)){ set.add(q.unit); seen.push(q.unit); } });
+  return seen;
+}
+// unit が null のときはデッキ全体の集計。正答率は回答履歴（hist）の累計ベース。
+function unitStats(deck, unit){
+  const qs = unit ? deck.questions.filter(q => q.unit === unit) : deck.questions;
+  let favN = 0, answeredQ = 0, seen = 0, correct = 0;
+  const hist = state.hist[deck.id] || {};
+  qs.forEach(q => {
+    if (isFav(deck.id, q.id)) favN += 1;
+    const h = hist[q.id];
+    if (h && h.seen > 0){ answeredQ += 1; seen += h.seen; correct += h.correct; }
+  });
+  return { total: qs.length, favN: favN, answeredQ: answeredQ, seen: seen, correct: correct, rate: seen > 0 ? Math.round(correct / seen * 100) : null };
+}
+function statsLine(st){
+  let s = '全' + st.total + '問 ／ 回答済み ' + st.answeredQ + '問';
+  if (st.rate !== null) s += ' ／ 正答率 ' + st.rate + '%';
+  s += ' ／ お気に入り ' + st.favN + '件';
+  return s;
+}
 function renderDeckList(){
   const list = $('deckList'); list.innerHTML = '';
   let totalDue = 0;
   decks.forEach(d => {
     const due = dueList(d).length; totalDue += due;
-    const favN = Object.keys(state.favs[d.id] || {}).length;
+    const st = unitStats(d, null);
     const div = document.createElement('div');
     div.className = 'item';
     div.innerHTML = '<div class="ttl"></div><div class="sub"></div><div class="meta"></div>';
-    div.querySelector('.ttl').textContent = d.subject + '｜' + d.title;
+    div.querySelector('.ttl').textContent = deckDisplayName(d);
     div.querySelector('.sub').textContent = d.description || '';
-    div.querySelector('.meta').textContent = '全' + d.questions.length + '問 ／ お気に入り ' + favN + '件 ／ 今日の復習 ' + due + '件';
+    div.querySelector('.meta').textContent = statsLine(st) + ' ／ 今日の復習 ' + due + '件';
     div.addEventListener('click', () => openDeck(d));
     list.appendChild(div);
   });
   $('deckStats').textContent = totalDue > 0 ? '今日の復習が合計 ' + totalDue + ' 件あります' : '';
 }
+function renderChapterList(){
+  const box = $('chapterList'); box.innerHTML = '';
+  const mk = (label, st, onClick) => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = '<div class="ttl"></div><div class="meta"></div><div class="bar"><i></i></div>';
+    div.querySelector('.ttl').textContent = label;
+    div.querySelector('.meta').textContent = statsLine(st);
+    div.querySelector('.bar i').style.width = st.total ? Math.round(st.answeredQ / st.total * 100) + '%' : '0%';
+    div.addEventListener('click', onClick);
+    box.appendChild(div);
+  };
+  mk('すべての章', unitStats(curDeck, null), () => startSession(curDeck.questions.slice(), '順番モード（すべての章）'));
+  deckUnits(curDeck).forEach(u => {
+    mk(u, unitStats(curDeck, u), () => startSession(curDeck.questions.filter(q => q.unit === u), '順番モード（' + u + '）'));
+  });
+}
 function openDeck(d){
   curDeck = d;
-  $('hdrTitle').textContent = d.subject + '｜' + d.title;
-  const sel = $('unitSelect'); sel.innerHTML = '';
-  const units = [...new Set(d.questions.map(q => q.unit))];
-  const optAll = document.createElement('option'); optAll.value = ''; optAll.textContent = 'すべての単元'; sel.appendChild(optAll);
-  units.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; sel.appendChild(o); });
+  $('hdrTitle').textContent = deckDisplayName(d);
   const due = dueList(d).length;
   $('reviewDesc').textContent = 'お気に入りに登録した問題が、間隔を空けて出題されます。（今日の分：' + due + '件）';
   $('btnReview').disabled = due === 0;
-  $('deckMenuStats').textContent = '全' + d.questions.length + '問 ／ お気に入り ' + Object.keys(state.favs[d.id] || {}).length + '件';
+  $('deckMenuStats').textContent = statsLine(unitStats(d, null));
+  renderChapterList();
   show('view-deck');
 }
 
@@ -284,13 +329,13 @@ function openDeck(d){
 function shuffle(a){ const r = a.slice(); for (let i = r.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
 function startSession(list, modeLabel){
   if (!list.length) return;
-  session = { list: list, idx: 0, correctCount: 0, misses: [], modeLabel: modeLabel, answered: false };
+  session = { list: list, idx: 0, modeLabel: modeLabel, answers: {} };
   show('view-quiz');
   renderQuestion();
 }
 function renderQuestion(){
   const q = session.list[session.idx];
-  session.answered = false;
+  const picked = session.answers[session.idx];
   $('qUnit').textContent = q.unit;
   $('qProg').textContent = (session.idx + 1) + ' / ' + session.list.length;
   $('qText').textContent = q.question;
@@ -306,23 +351,18 @@ function renderQuestion(){
   });
   $('qPanel').classList.remove('on');
   $('favPrompt').classList.remove('on');
-  $('btnNext').classList.remove('on');
-  $('btnNext').textContent = session.idx + 1 >= session.list.length ? '結果を見る' : '次へ';
+  $('btnPrev').disabled = session.idx === 0;
+  $('btnNextQ').textContent = session.idx + 1 >= session.list.length ? '結果を見る' : '次の問題 →';
+  if (picked !== undefined) showAnswered(q, picked);
 }
-function answer(i){
-  if (session.answered) return;
-  session.answered = true;
-  const q = session.list[session.idx];
-  const correct = i === q.answer;
-  if (correct) session.correctCount += 1; else session.misses.push({ q: q, picked: i });
-  recordHist(curDeck.id, q.id, correct);
-  applySRS(curDeck.id, q.id, correct);
-  saveState();
+// 回答済みの問題を表示する（戻ってきたときも自分の回答と解説が見える状態）
+function showAnswered(q, picked){
+  const correct = picked === q.answer;
   const btns = $('qChoices').querySelectorAll('.choice');
   btns.forEach((b, j) => {
     b.disabled = true;
     if (j === q.answer) b.classList.add('correct');
-    else if (j === i) b.classList.add('wrong');
+    else if (j === picked) b.classList.add('wrong');
     else b.classList.add('dim');
   });
   const v = $('qVerdict');
@@ -330,24 +370,43 @@ function answer(i){
   v.className = 'verdict ' + (correct ? 'ok' : 'ng');
   $('qExplain').textContent = q.explanation || '';
   const trap = $('qTrap');
-  const note = (!correct && q.distractor_notes) ? q.distractor_notes[String(i)] : null;
+  const note = (!correct && q.distractor_notes) ? q.distractor_notes[String(picked)] : null;
   if (note){ trap.style.display = 'block'; trap.innerHTML = '<b>選んだ選択肢について：</b>'; trap.appendChild(document.createTextNode(note)); }
   else trap.style.display = 'none';
   $('qPanel').classList.add('on');
   if (!correct && !isFav(curDeck.id, q.id)) $('favPrompt').classList.add('on');
-  $('btnNext').classList.add('on');
+}
+function answer(i){
+  if (session.answers[session.idx] !== undefined) return; // 回答済みは数え直さない
+  const q = session.list[session.idx];
+  session.answers[session.idx] = i;
+  const correct = i === q.answer;
+  recordHist(curDeck.id, q.id, correct);
+  applySRS(curDeck.id, q.id, correct);
+  saveState();
+  renderQuestion();
+}
+function prevQuestion(){
+  if (session.idx > 0){ session.idx -= 1; renderQuestion(); }
 }
 function nextQuestion(){
-  session.idx += 1;
-  if (session.idx >= session.list.length) renderResult();
-  else renderQuestion();
+  if (session.idx + 1 >= session.list.length) renderResult();
+  else { session.idx += 1; renderQuestion(); }
 }
 function renderResult(){
-  $('resScore').textContent = session.correctCount + ' / ' + session.list.length + ' 問正解';
-  $('resSub').textContent = session.modeLabel;
+  let answered = 0, correctCount = 0;
+  const misses = [];
+  session.list.forEach((q, i) => {
+    const p = session.answers[i];
+    if (p === undefined) return;
+    answered += 1;
+    if (p === q.answer) correctCount += 1; else misses.push({ q: q, picked: p });
+  });
+  $('resScore').textContent = correctCount + ' / ' + answered + ' 問正解';
+  $('resSub').textContent = session.modeLabel + (answered < session.list.length ? '（全' + session.list.length + '問中 ' + answered + '問に回答）' : '');
   const box = $('resMiss'); box.innerHTML = '';
-  $('resMissTitle').style.display = session.misses.length ? 'block' : 'none';
-  session.misses.forEach(m => {
+  $('resMissTitle').style.display = misses.length ? 'block' : 'none';
+  misses.forEach(m => {
     const div = document.createElement('div');
     div.className = 'missitem';
     const qd = document.createElement('div'); qd.textContent = m.q.question;
@@ -365,14 +424,10 @@ function renderResult(){
 }
 
 // ---------- イベント ----------
-$('btnSeq').addEventListener('click', () => {
-  const u = $('unitSelect').value;
-  const list = curDeck.questions.filter(q => !u || q.unit === u);
-  startSession(list, '順番モード' + (u ? '（' + u + '）' : ''));
-});
 $('btnReview').addEventListener('click', () => startSession(dueList(curDeck), '復習'));
 $('btnRandom').addEventListener('click', () => startSession(shuffle(curDeck.questions), 'ランダム'));
-$('btnNext').addEventListener('click', nextQuestion);
+$('btnPrev').addEventListener('click', prevQuestion);
+$('btnNextQ').addEventListener('click', nextQuestion);
 $('btnStar').addEventListener('click', () => {
   const q = session.list[session.idx];
   setFav(curDeck.id, q.id, !isFav(curDeck.id, q.id));
