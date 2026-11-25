@@ -51,6 +51,9 @@ main{flex:1;display:flex;flex-direction:column;padding:12px 14px 28px;gap:10px;m
 .statchip .sl{display:block;font-size:10px;color:var(--muted)}
 .statchip .sv{display:block;font-size:18px;font-weight:800;color:var(--accent);line-height:1.3}
 #deckMenuStats .statchips{margin-top:0}
+#deckMenuStats{margin-bottom:14px}
+.item.allchap{border:1.5px solid var(--accent);background:var(--input)}
+.item.allchap .ttl{color:var(--accent)}
 .modebtn{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;color:var(--text);cursor:pointer}
 .modebtn .t{font-size:15px;font-weight:700}
 .modebtn .d{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.5}
@@ -93,7 +96,8 @@ main{flex:1;display:flex;flex-direction:column;padding:12px 14px 28px;gap:10px;m
 .note b{color:var(--text)}
 .err{color:var(--warning);font-size:14px;line-height:1.7;padding:12px 0}
 h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
-.sumbtn{margin-top:8px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer}
+.sumrow{margin-top:10px}
+.sumbtn{background:var(--input);border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer}
 .sum-unit{font-size:16px;font-weight:800;line-height:1.5}
 .sum-intro{line-height:1.85;font-size:15px;margin:12px 0 4px}
 h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
@@ -148,7 +152,7 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
     <button class="modebtn" id="btnResume" style="display:none"><span class="t">続きから解く</span><div class="d" id="resumeDesc"></div></button>
     <button class="modebtn" id="btnReview"><span class="t">復習</span><div class="d" id="reviewDesc">お気に入りに登録した問題が、間隔を空けて出題されます。</div></button>
     <button class="modebtn" id="btnRandom"><span class="t">ランダム</span><div class="d">全問題からランダムに出題します。</div></button>
-    <h2 class="sec">章（単元）一覧 ― タップでその章の問題、「まとめを読む」で全体像を先に確認できます</h2>
+    <h2 class="sec">章</h2>
     <div id="chapterList"></div>
   </section>
 
@@ -318,8 +322,8 @@ function loadDeckCache(){
   } catch(e){}
   return null;
 }
-function saveDeckCache(indexSha){
-  try { localStorage.setItem(DECK_CACHE_KEY, JSON.stringify({ indexSha: indexSha || null, decks: decks, savedAt: Date.now() })); } catch(e){}
+function saveDeckCache(indexSha, fileShas){
+  try { localStorage.setItem(DECK_CACHE_KEY, JSON.stringify({ indexSha: indexSha || null, fileShas: fileShas || null, decks: decks, savedAt: Date.now() })); } catch(e){}
 }
 function showDeckGuide(kind, msg){
   const g = $('deckGuide'); if (!g) return;
@@ -338,41 +342,73 @@ function showDeckGuide(kind, msg){
   g.style.display = 'block';
 }
 function hideDeckGuide(){ const g = $('deckGuide'); if (g) g.style.display = 'none'; }
-async function fetchDecksFromGitHub(){
+// index と各デッキファイルを取得し、ファイルごとの sha も集める。失敗・欠落は null。
+async function loadDecksFromGitHub(){
   const idx = await ghGetFile(DECK_INDEX_PATH);
-  if (!idx){ showDeckGuide('notfound'); return false; }
+  if (!idx) return null;
   const out = [];
+  const fileShas = {};
+  fileShas[DECK_INDEX_PATH] = idx.sha;
   for (const ent of idx.json.decks){
-    const f = await ghGetFile(deckPathOf(ent));
-    if (!f){ showDeckGuide('notfound'); return false; }
-    f.json._file = deckPathOf(ent);
+    const p = deckPathOf(ent);
+    const f = await ghGetFile(p);
+    if (!f) return null;
+    f.json._file = p;
+    fileShas[p] = f.sha;
     out.push(f.json);
   }
-  decks = out;
-  saveDeckCache(idx.sha);
+  return { decks: out, indexSha: idx.sha, fileShas: fileShas };
+}
+async function fetchDecksFromGitHub(){
+  const r = await loadDecksFromGitHub();
+  if (!r){ showDeckGuide('notfound'); return false; }
+  decks = r.decks;
+  saveDeckCache(r.indexSha, r.fileShas);
   hideDeckGuide();
   renderDeckList();
   return true;
 }
-// キャッシュ表示後に裏で更新を確認する。index の sha が同じなら何もしない。
+// quiz_decks フォルダの一覧（ファイルごとの sha）を取得する。中身はダウンロードしない。
+async function ghDirShaMap(){
+  const url = 'https://api.github.com/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + DECK_DIR + '?ref=' + (ghCfg.branch || 'main') + '&_=' + Date.now();
+  const res = await fetch(url, { method: 'GET', cache: 'no-store', headers: { 'Authorization': 'Bearer ' + ghCfg.token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('GitHub API ' + res.status);
+  const arr = await res.json();
+  if (!Array.isArray(arr)) return null;
+  const map = {};
+  arr.forEach(e => { if (e.type === 'file' && /\.json$/.test(e.name)) map[DECK_DIR + '/' + e.name] = e.sha; });
+  return map;
+}
+function shaMapsEqual(a, b){
+  const ka = Object.keys(a), kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  return ka.every(k => a[k] === b[k]);
+}
+// キャッシュ表示後に裏で更新を確認する。新しさの判定は index だけでなく
+// デッキファイル自体の sha で行う（デッキだけ差し替わった更新も拾うため）。
+// 旧形式キャッシュ（fileShas 無し）は常に古い扱いで、一度だけ取り直す。
 async function revalidateDecks(){
   if (!ghReady()) return;
   try {
-    const idx = await ghGetFile(DECK_INDEX_PATH);
-    if (!idx) return;
+    const remote = await ghDirShaMap();
+    if (!remote) return;
     const cache = loadDeckCache();
-    if (cache && cache.indexSha === idx.sha) return;
-    const out = [];
-    for (const ent of idx.json.decks){
-      const f = await ghGetFile(deckPathOf(ent));
-      if (!f) return;
-      f.json._file = deckPathOf(ent);
-      out.push(f.json);
-    }
-    decks = out;
-    saveDeckCache(idx.sha);
+    if (cache && cache.fileShas && shaMapsEqual(cache.fileShas, remote)) return;
+    const r = await loadDecksFromGitHub();
+    if (!r) return;
+    decks = r.decks;
+    saveDeckCache(r.indexSha, r.fileShas);
+    hideDeckGuide();
     const cur = document.querySelector('.view.on');
     if (cur && cur.id === 'view-decks') renderDeckList();
+    if (curDeck){
+      const fresh = decks.find(d => d.id === curDeck.id);
+      if (fresh && fresh !== curDeck){
+        curDeck = fresh;
+        if (cur && cur.id === 'view-deck') openDeck(curDeck);
+      }
+    }
   } catch(e){ /* 裏での確認なので、失敗してもキャッシュ表示を続ける */ }
 }
 function show(view){
@@ -388,6 +424,35 @@ function deckUnits(deck){
   deck.questions.forEach(q => { if (!set.has(q.unit)){ set.add(q.unit); seen.push(q.unit); } });
   return seen;
 }
+// 章の表示名（短縮名）。キー・値とも unit 文字列そのものは内部キーとして変えず、
+// 表示箇所でのみこのマップで置き換える。マップに無い unit はそのまま表示する。
+const UNIT_LABELS = {
+  "§1 指示詞・疑問詞（コソアド）": "§1 コソアドと疑問詞",
+  "§3 名詞と名詞を結ぶ助詞―並列助詞と「の」―": "§3 並列助詞と「の」",
+  "§4 存在・所有を表す表現": "§4 存在・所有",
+  "§5 時間を表す表現(1)―テンス・完了―": "§5 テンス・完了",
+  "§6 時間を表す表現(2)―アスペクト―": "§6 アスペクト",
+  "§7 変化を表す表現": "§7 変化",
+  "§8 可能を表す表現": "§8 可能",
+  "§10 自動詞と他動詞": "§10 自動詞・他動詞",
+  "§11 授受の表現―あげる・くれる・もらう―": "§11 授受表現",
+  "§13 話し手の気持ちを表す表現(1)―判断―": "§13 判断",
+  "§14 話し手の気持ちを表す表現(2)―意志・願望―": "§14 意志・願望",
+  "§15 話し手の気持ちを表す表現(3)―命令・依頼・勧誘―": "§15 命令・依頼・勧誘",
+  "§16 話し手の気持ちを表す表現(4)―義務・勧め・許可・禁止など―": "§16 義務・許可・禁止",
+  "§17 話し手の気持ちを表す表現(5)―終助詞―": "§17 終助詞",
+  "§21 複文と接続詞(1)―「〜て」付帯状況・並列の表現―": "§21 「〜て」形の接続",
+  "§22 複文と接続詞(2)―時間―": "§22 時間の接続",
+  "§23 複文と接続詞(3)―理由・目的―": "§23 理由・目的の接続",
+  "§24 複文と接続詞(4)―条件―": "§24 条件の接続",
+  "§25 複文と接続詞(5)―逆接―": "§25 逆接の接続",
+  "§28 関連づけの「のだ」": "§28 「のだ」",
+  "§29 疑問文の種類と文末形式": "§29 疑問文",
+  "§30 立場を表す表現―ヴォイス（受身・使役・使役受身）―": "§30 ヴォイス",
+  "§37 名詞（文）": "§37 名詞文",
+  "§41 数・量を表す表現": "§41 数・量"
+};
+function unitLabel(u){ return UNIT_LABELS[u] || u; }
 // unit が null のときはデッキ全体の集計。正答率は回答履歴（hist）の累計ベース。
 function unitStats(deck, unit){
   const qs = unit ? deck.questions.filter(q => q.unit === unit) : deck.questions;
@@ -445,26 +510,29 @@ function renderDeckList(){
 }
 function renderChapterList(){
   const box = $('chapterList'); box.innerHTML = '';
-  const mk = (label, st, onClick, unit) => {
+  const mk = (label, st, onClick, unit, cls) => {
     const div = document.createElement('div');
-    div.className = 'item';
+    div.className = 'item' + (cls ? ' ' + cls : '');
     div.innerHTML = '<div class="ttl"></div><div class="meta"></div><div class="bar"><i></i></div>';
     div.querySelector('.ttl').textContent = label;
     div.querySelector('.meta').textContent = statsLine(st);
     div.querySelector('.bar i').style.width = st.total ? Math.round(st.answeredQ / st.total * 100) + '%' : '0%';
     if (unit && curDeck.summaries && curDeck.summaries[unit]){
+      const row = document.createElement('div');
+      row.className = 'sumrow';
       const b = document.createElement('button');
       b.className = 'sumbtn';
       b.textContent = 'まとめを読む';
       b.addEventListener('click', e => { e.stopPropagation(); openSummary(unit); });
-      div.appendChild(b);
+      row.appendChild(b);
+      div.appendChild(row);
     }
     div.addEventListener('click', onClick);
     box.appendChild(div);
   };
-  mk('すべての章', unitStats(curDeck, null), () => startSession(curDeck.questions.slice(), '順番モード（すべての章）', 'seqall', { type: 'all' }), null);
+  mk('すべての章', unitStats(curDeck, null), () => startSession(curDeck.questions.slice(), '順番モード（すべての章）', 'seqall', { type: 'all' }), null, 'allchap');
   deckUnits(curDeck).forEach(u => {
-    mk(u, unitStats(curDeck, u), () => startSession(curDeck.questions.filter(q => q.unit === u), '順番モード（' + u + '）', 'seq:' + u, { type: 'unit', unit: u }), u);
+    mk(unitLabel(u), unitStats(curDeck, u), () => startSession(curDeck.questions.filter(q => q.unit === u), '順番モード（' + unitLabel(u) + '）', 'seq:' + u, { type: 'unit', unit: u }), u);
   });
 }
 // ---------- 章のまとめ ----------
@@ -476,7 +544,7 @@ function openSummary(unit, from){
   sumUnit = unit;
   sumReturn = from || 'deck';
   $('sumBackLabel').textContent = sumReturn === 'quiz' ? '問題に戻る' : '章一覧';
-  $('sumUnit').textContent = unit + ' のまとめ';
+  $('sumUnit').textContent = unitLabel(unit) + ' のまとめ';
   $('sumIntro').textContent = s.intro || '';
   const fill = (id, arr) => {
     const ul = $(id); ul.innerHTML = '';
@@ -489,7 +557,7 @@ function openSummary(unit, from){
   window.scrollTo(0, 0);
 }
 $('btnSumStart').addEventListener('click', () => {
-  if (sumUnit) startSession(curDeck.questions.filter(q => q.unit === sumUnit), '順番モード（' + sumUnit + '）', 'seq:' + sumUnit, { type: 'unit', unit: sumUnit });
+  if (sumUnit) startSession(curDeck.questions.filter(q => q.unit === sumUnit), '順番モード（' + unitLabel(sumUnit) + '）', 'seq:' + sumUnit, { type: 'unit', unit: sumUnit });
 });
 $('btnSumTopBack').addEventListener('click', () => {
   if (sumReturn === 'quiz' && session && !session.done){ show('view-quiz'); renderQuestion(); }
@@ -540,7 +608,7 @@ function renderQuestion(){
   const q = session.list[session.idx];
   const picked = session.answers[session.idx];
   session.lastUsed = Date.now();
-  $('qUnit').textContent = q.unit;
+  $('qUnit').textContent = unitLabel(q.unit);
   $('qUnit').style.cursor = (curDeck.summaries && curDeck.summaries[q.unit]) ? 'pointer' : '';
   $('qProg').textContent = (session.idx + 1) + ' / ' + session.list.length;
   $('qBarFill').style.width = session.list.length ? Math.round(Object.keys(session.answers).length / session.list.length * 100) + '%' : '0%';
