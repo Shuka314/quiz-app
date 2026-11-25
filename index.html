@@ -103,6 +103,13 @@ h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
 h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
 .sum-list{margin:0;padding-left:20px;line-height:1.75;font-size:14px}
 .sum-list li{margin-bottom:5px}
+.sum-table-title{font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--text)}
+.sum-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:10px}
+.sum-table{border-collapse:collapse;width:100%;font-size:13px;line-height:1.6}
+.sum-table th,.sum-table td{padding:6px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--border)}
+.sum-table tbody tr:last-child td{border-bottom:none}
+.sum-table th{background:var(--input);font-weight:700}
+.sum-table td:first-child{font-weight:600}
 .sum-start{border-color:var(--accent);color:var(--accent)}
 .pill{border:1px solid var(--border);background:var(--card);color:var(--accent);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .pill.err{color:var(--warning);border-color:var(--warning)}
@@ -164,6 +171,7 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
       <p class="sum-intro" id="sumIntro"></p>
       <h3 class="sum-sec">種類と全体像</h3>
       <ul class="sum-list" id="sumMap"></ul>
+      <div id="sumTables"></div>
       <h3 class="sum-sec">押さえるポイント</h3>
       <ul class="sum-list" id="sumPoints"></ul>
       <h3 class="sum-sec">問題を解くときの見方</h3>
@@ -551,6 +559,35 @@ function openSummary(unit, from){
     (arr || []).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
   };
   fill('sumMap', s.map);
+  const tbox = $('sumTables'); tbox.innerHTML = '';
+  (s.tables || []).forEach(t => {
+    const wrap = document.createElement('div');
+    if (t.title){
+      const title = document.createElement('div');
+      title.className = 'sum-table-title';
+      title.textContent = t.title;
+      wrap.appendChild(title);
+    }
+    const scroller = document.createElement('div');
+    scroller.className = 'sum-table-wrap';
+    const table = document.createElement('table');
+    table.className = 'sum-table';
+    const thead = document.createElement('thead');
+    const htr = document.createElement('tr');
+    (t.head || []).forEach(h => { const th = document.createElement('th'); th.textContent = h; htr.appendChild(th); });
+    thead.appendChild(htr);
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    (t.rows || []).forEach(r => {
+      const tr = document.createElement('tr');
+      r.forEach(c => { const td = document.createElement('td'); td.textContent = c; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    scroller.appendChild(table);
+    wrap.appendChild(scroller);
+    tbox.appendChild(wrap);
+  });
   fill('sumPoints', s.points);
   fill('sumTips', s.tips);
   show('view-summary');
