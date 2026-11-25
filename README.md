@@ -14,19 +14,27 @@
 
 間隔の梯子は単語アプリと同じです（正解：0→1日、以降は2倍／不正解：間隔を半分にして再出題、lapses加算）。
 
-## 進捗の保存（GitHub同期）
+## デッキと進捗の保存場所（GitHub）
 
-- 進捗（お気に入り・SRS状態・回答履歴）は、プライベートリポジトリ **Shuka314/vocab-data** の **quiz_progress.json** に保存されます（問題デッキとは分離）。
-- アプリの設定画面で GitHub トークン（Fine-grained token、vocab-data の Contents: Read and write）を入力すると有効になります。単語アプリで使っているトークンが vocab-data にアクセスできるものなら、そのまま使えます。
-- 端末内キャッシュ（localStorage）との併用です。オフライン時は端末内に保存され、オンライン時に同期します。
+**公開リポジトリ（この quiz-app）にはアプリ本体（index.html）だけを置き、問題デッキは置きません。**
+デッキと進捗は、どちらもプライベートリポジトリ **Shuka314/app-data** にあります（他人からは見えません）。
+
+| 中身 | 置き場所（Shuka314/app-data 内） |
+|---|---|
+| 問題デッキ | `quiz_decks/` フォルダ（`quiz_decks/index.json` ＋教科ごとの JSON） |
+| 進捗（お気に入り・SRS状態・回答履歴） | `quiz_progress.json` |
+
+- アプリは GitHub Contents API でデッキを読み込みます。アプリの設定画面で GitHub トークン（Fine-grained token、app-data の Contents: Read and write）を入力すると有効になります。単語アプリで使っているトークンが app-data にアクセスできるものなら、そのまま使えます（デッキ読み込みと進捗同期で共通のトークンです）。
+- トークンが未設定だとデッキは読めません（デッキ選択画面に理由と設定への案内が出ます）。一度読み込んだデッキは端末にキャッシュされ、次回起動時はキャッシュが先に表示され、裏で更新を確認します。
+- 進捗は端末内キャッシュ（localStorage）との併用です。オフライン時は端末内に保存され、オンライン時に同期します。
 - 単語アプリと同じく、**同時に2つの端末・タブで開かない**でください（進捗が競合します）。
 
 ## デッキの追加方法
 
 教科の追加に、アプリ本体の変更は要りません。
 
-1. `decks/<subject>.json` を作る（下の形式）
-2. `decks/index.json` の `decks` に `{"id": "<subject>", "file": "decks/<subject>.json"}` を1行足す
+1. Shuka314/app-data の `quiz_decks/<subject>.json` を作る（下の形式）
+2. `quiz_decks/index.json` の `decks` に `{"id": "<subject>", "file": "<subject>.json"}` を1行足す（`file` は quiz_decks フォルダ内のファイル名）
 
 デッキJSONの形式：
 
@@ -58,8 +66,8 @@
 
 | デッキ | 状態 |
 |---|---|
-| 日本語文法（decks/japanese_grammar.json） | **本デッキ 197問**。出典『初級を教える人のための日本語文法ハンドブック』の目次（全42節＋コラム10件、細目約187項目）を洗い出し、項目ごとに1問を作成。問題文・選択肢・解説は出典の文章を写さず独自に作成 |
-| 化学（decks/chemistry.json） | 教科追加の構造確認用の最小サンプル（2問） |
+| 日本語文法（app-data の quiz_decks/japanese_grammar.json） | 出典『初級を教える人のための日本語文法ハンドブック』の目次（全42節＋コラム10件、細目約187項目）を洗い出し、項目ごとに問題を作成。問題文・選択肢・解説は出典の文章を写さず独自に作成（問題数は増量作業の進捗に合わせて変動） |
+| 化学（app-data の quiz_decks/chemistry.json） | 教科追加の構造確認用の最小サンプル（2問） |
 
 ## 未配線・今後
 

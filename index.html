@@ -93,6 +93,11 @@ h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
   <section class="view" id="view-decks">
     <div class="stats" id="deckStats"></div>
     <div id="deckList"></div>
+    <div class="card" id="deckGuide" style="display:none;cursor:default">
+      <div class="note" id="deckGuideText"></div>
+      <button class="plainbtn" id="btnGuideSettings">設定を開く</button>
+      <button class="plainbtn" id="btnGuideRetry" style="display:none">再読み込み</button>
+    </div>
     <div class="err" id="deckErr"></div>
   </section>
 
@@ -163,15 +168,16 @@ h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
         <div id="ghStatus"></div>
       </div>
       <div class="note" style="margin-top:16px">
-        <p>進捗（お気に入り・復習の間隔・回答履歴）は、上のリポジトリの <b>quiz_progress.json</b> に保存されます。初期値は単語アプリと同じ保存先（Shuka314 / vocab-data）です。トークンが未設定の間は、この端末の中（localStorage）にだけ保存されます。</p>
-        <p><b>トークンの作り方</b>：GitHub の Settings → Developer settings → Personal access tokens → Fine-grained tokens で、Repository access を vocab-data だけにし、Permissions の Contents を Read and write にして発行します。単語アプリで使っているトークンが vocab-data にアクセスできるものなら、そのまま同じものを貼れます。トークンはこの端末のブラウザ内にだけ保存され、GitHub 以外には送られません。</p>
+        <p>進捗（お気に入り・復習の間隔・回答履歴）は、上のリポジトリの <b>quiz_progress.json</b> に保存されます。初期値は単語アプリと同じ保存先（Shuka314 / app-data）です。トークンが未設定の間は、この端末の中（localStorage）にだけ保存されます。</p>
+        <p><b>デッキも同じ場所にあります</b>：問題デッキは他人に見られないよう、公開リポジトリには置かず、同じプライベートリポジトリの <b>quiz_decks</b> フォルダに置いてあります。読み込みには上のトークン（進捗の同期と共通）を使います。トークンが未設定だとデッキは読めません（一度読み込んだデッキは端末にキャッシュされ、次回はキャッシュが先に表示されます）。</p>
+        <p><b>トークンの作り方</b>：GitHub の Settings → Developer settings → Personal access tokens → Fine-grained tokens で、Repository access を app-data だけにし、Permissions の Contents を Read and write にして発行します。単語アプリで使っているトークンが app-data にアクセスできるものなら、そのまま同じものを貼れます。トークンはこの端末のブラウザ内にだけ保存され、GitHub 以外には送られません。</p>
         <p><b>注意</b>：単語アプリと同じく、同時に2つの端末・タブで開かないでください（進捗が競合します）。片方を閉じてから、もう片方を開いてください。</p>
       </div>
     </div>
     <div class="card" style="cursor:default;margin-top:12px">
       <div class="note">
         <p><b>使い方</b><br>デッキ（教科）を選ぶと、章（単元）の一覧が出ます。各章には問題数・回答済み数・正答率・お気に入り数が表示され、好きな章をタップしてそこから始められます。「復習」「ランダム」も選べます。答えを選ぶと、その場で正誤と解説が出ます。問題画面の下のボタンで前の問題・次の問題へ移動でき、解き終わった問題に戻ると自分の回答と解説がそのまま見えます。問題の右上の星でお気に入りに登録すると、その問題は間隔反復（単語アプリと同じ梯子：正解で間隔が伸び、不正解で縮む）の対象になり、「復習」に出てきます。</p>
-        <p><b>デッキの追加</b><br>教科は decks フォルダの JSON ファイル1つで追加できます（decks/index.json に1行足すだけ）。アプリ本体の変更は要りません。</p>
+        <p><b>デッキの追加</b><br>教科は、プライベートリポジトリ（app-data）の quiz_decks フォルダに JSON ファイルを1つ置き、quiz_decks/index.json に1行足すだけで追加できます。アプリ本体の変更は要りません。</p>
         <p><b>デッキの状態</b><br>「日本語文法」は、出典『初級を教える人のための日本語文法ハンドブック』の項目一覧（全42節＋コラム10件）を網羅した197問のデッキです（問題文・解説は出典の文章を写さず独自に作成）。「化学」は教科追加の構造確認用の最小サンプルです。</p>
       </div>
     </div>
@@ -235,19 +241,95 @@ function recordHist(deckId, qid, correct){
   state.hist[deckId][qid] = h;
 }
 
-// ---------- デッキ読み込み ----------
+// ---------- デッキ読み込み（GitHub Contents API・プライベート保存） ----------
+// デッキは公開リポジトリには置かず、進捗と同じ Shuka314/app-data の
+// quiz_decks/ フォルダに置く。読み込みには進捗同期と同じトークンを使う。
+// 一度読み込んだデッキは端末にキャッシュし、次回はキャッシュを先に表示して
+// 裏で更新を確認する（単語アプリの作法）。
+const DECK_DIR = 'quiz_decks';
+const DECK_INDEX_PATH = DECK_DIR + '/index.json';
+const DECK_CACHE_KEY = 'quizDeckCacheV1';
 let decks = [];       // 読み込み済みデッキオブジェクト
 let curDeck = null;   // 現在のデッキ
 let session = null;   // {list, idx, modeLabel, answers:{idx: pickedIndex}}
 
-async function loadDecks(){
-  const idx = await (await fetch('decks/index.json')).json();
-  decks = [];
-  for (const ent of idx.decks){
-    const d = await (await fetch(ent.file)).json();
-    d._file = ent.file;
-    decks.push(d);
+function deckPathOf(ent){
+  const f = ent.file || (ent.id + '.json');
+  return f.indexOf('/') >= 0 ? f : DECK_DIR + '/' + f;
+}
+// Contents API でファイルを1つ読む。404 は null、その他の失敗は throw。
+// ghCfg / b64dec は下の GitHub 同期セクションで定義される（起動時に呼ばれるので問題ない）。
+async function ghGetFile(path){
+  const url = 'https://api.github.com/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + path + '?ref=' + (ghCfg.branch || 'main') + '&_=' + Date.now();
+  const res = await fetch(url, { method: 'GET', cache: 'no-store', headers: { 'Authorization': 'Bearer ' + ghCfg.token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('GitHub API ' + res.status);
+  const j = await res.json();
+  return { json: JSON.parse(b64dec(j.content)), sha: j.sha };
+}
+function loadDeckCache(){
+  try {
+    const c = JSON.parse(localStorage.getItem(DECK_CACHE_KEY) || 'null');
+    if (c && Array.isArray(c.decks) && c.decks.length) return c;
+  } catch(e){}
+  return null;
+}
+function saveDeckCache(indexSha){
+  try { localStorage.setItem(DECK_CACHE_KEY, JSON.stringify({ indexSha: indexSha || null, decks: decks, savedAt: Date.now() })); } catch(e){}
+}
+function showDeckGuide(kind, msg){
+  const g = $('deckGuide'); if (!g) return;
+  $('deckList').innerHTML = '';
+  $('deckStats').textContent = '';
+  let t = '';
+  if (kind === 'token'){
+    t = '<b>デッキは非公開で保存されています</b><br>問題デッキは、他人に見られないよう公開リポジトリではなく、プライベートリポジトリ（Shuka314 / app-data）の中に置いてあります。そのため、デッキを読み込むには GitHub トークンの設定が必要です。下のボタンから設定を開いてトークンを貼ってください（単語アプリで使っている、app-data にアクセスできるトークンがそのまま使えます）。';
+  } else if (kind === 'notfound'){
+    t = '<b>GitHub にデッキが見つかりませんでした</b><br>トークンは設定されていますが、保存先（Shuka314 / app-data の quiz_decks フォルダ）にデッキがまだ置かれていません。';
+  } else {
+    t = '<b>デッキの読み込みに失敗しました</b><br>' + (msg || '') + '<br>通信状態とトークンの権限を確認してください。';
   }
+  $('deckGuideText').innerHTML = t;
+  $('btnGuideRetry').style.display = kind === 'token' ? 'none' : 'block';
+  g.style.display = 'block';
+}
+function hideDeckGuide(){ const g = $('deckGuide'); if (g) g.style.display = 'none'; }
+async function fetchDecksFromGitHub(){
+  const idx = await ghGetFile(DECK_INDEX_PATH);
+  if (!idx){ showDeckGuide('notfound'); return false; }
+  const out = [];
+  for (const ent of idx.json.decks){
+    const f = await ghGetFile(deckPathOf(ent));
+    if (!f){ showDeckGuide('notfound'); return false; }
+    f.json._file = deckPathOf(ent);
+    out.push(f.json);
+  }
+  decks = out;
+  saveDeckCache(idx.sha);
+  hideDeckGuide();
+  renderDeckList();
+  return true;
+}
+// キャッシュ表示後に裏で更新を確認する。index の sha が同じなら何もしない。
+async function revalidateDecks(){
+  if (!ghReady()) return;
+  try {
+    const idx = await ghGetFile(DECK_INDEX_PATH);
+    if (!idx) return;
+    const cache = loadDeckCache();
+    if (cache && cache.indexSha === idx.sha) return;
+    const out = [];
+    for (const ent of idx.json.decks){
+      const f = await ghGetFile(deckPathOf(ent));
+      if (!f) return;
+      f.json._file = deckPathOf(ent);
+      out.push(f.json);
+    }
+    decks = out;
+    saveDeckCache(idx.sha);
+    const cur = document.querySelector('.view.on');
+    if (cur && cur.id === 'view-decks') renderDeckList();
+  } catch(e){ /* 裏での確認なので、失敗してもキャッシュ表示を続ける */ }
 }
 function show(view){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
@@ -456,14 +538,14 @@ $('btnAbout').addEventListener('click', () => {
 $('btnAboutBack').addEventListener('click', () => show(lastView));
 
 // ===== GitHub 同期（単語アプリと同じ base-snapshot 方式） =====
-// 進捗は Shuka314/vocab-data の quiz_progress.json に保存する。
+// 進捗は Shuka314/app-data の quiz_progress.json に保存する。
 // 起動時：base（前回同期した状態）と比べて、GitHubが新しければ取り込み、
 // 自分が新しければ送信、両方変わっていれば進捗優先でマージして送信。
 // 利用中：変更のたびに送信のみ。
 const PROGRESS_FILE = 'quiz_progress.json';
 let ghCfg = null;
 try { ghCfg = JSON.parse(localStorage.getItem('quizGhCfg') || 'null'); } catch(e){}
-if (!ghCfg) ghCfg = { owner: 'Shuka314', repo: 'vocab-data', token: '', branch: 'main' };
+if (!ghCfg) ghCfg = { owner: 'Shuka314', repo: 'app-data', token: '', branch: 'main' };
 function ghReady(){ return !!(ghCfg && ghCfg.owner && ghCfg.repo && ghCfg.token); }
 function b64enc(str){ return btoa(unescape(encodeURIComponent(str))); }
 function b64dec(b64){ return decodeURIComponent(escape(atob(b64.replace(/\s/g, '')))); }
@@ -601,19 +683,38 @@ async function pushProgress(){
 }
 function fillGhForm(){
   $('ghOwner').value = ghCfg.owner || 'Shuka314';
-  $('ghRepo').value = ghCfg.repo || 'vocab-data';
+  $('ghRepo').value = ghCfg.repo || 'app-data';
   $('ghBranch').value = ghCfg.branch || 'main';
   $('ghToken').value = ghCfg.token || '';
 }
 function applyGhForm(){
-  ghCfg = { owner: $('ghOwner').value.trim() || 'Shuka314', repo: $('ghRepo').value.trim() || 'vocab-data', token: $('ghToken').value.trim(), branch: $('ghBranch').value.trim() || 'main' };
+  ghCfg = { owner: $('ghOwner').value.trim() || 'Shuka314', repo: $('ghRepo').value.trim() || 'app-data', token: $('ghToken').value.trim(), branch: $('ghBranch').value.trim() || 'main' };
   try { localStorage.setItem('quizGhCfg', JSON.stringify(ghCfg)); } catch(e){}
   return ghReady();
 }
 $('ghSave').addEventListener('click', async () => {
-  if (applyGhForm()){ ghBase = null; saveBase(); await syncNow(); }
+  if (applyGhForm()){
+    ghBase = null; saveBase(); await syncNow();
+    if (!decks.length){
+      // トークンを入れたらデッキも読みにいく（設定画面からそのまま使い始められるように）
+      try { if (await fetchDecksFromGitHub()) show('view-decks'); }
+      catch(e){ showDeckGuide('error', e.message); show('view-decks'); }
+    } else {
+      revalidateDecks();
+    }
+  }
   else ghStatus('トークンを入力してください。');
   syncUi();
+});
+$('btnGuideSettings').addEventListener('click', () => {
+  const cur = document.querySelector('.view.on');
+  if (cur) lastView = cur.id;
+  fillGhForm(); show('view-about');
+});
+$('btnGuideRetry').addEventListener('click', async () => {
+  hideDeckGuide();
+  try { await fetchDecksFromGitHub(); }
+  catch(e){ showDeckGuide('error', e.message); }
 });
 $('ghSyncNow').addEventListener('click', async () => { applyGhForm(); await syncNow(); });
 $('syncPill').addEventListener('click', async () => {
@@ -629,12 +730,24 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('online', () => { if (ghReady() && !syncBusy) syncNow(); });
 
 // ---------- 起動 ----------
-loadDecks().then(async () => {
-  renderDeckList(); show('view-decks');
+(async function boot(){
   fillGhForm(); syncUi();
+  const cache = loadDeckCache();
+  if (cache){
+    // キャッシュを先に表示し、裏で更新を確認する
+    decks = cache.decks;
+    renderDeckList(); show('view-decks');
+    revalidateDecks();
+  } else if (!ghReady()){
+    // トークン未設定ではデッキは読めない（理由と設定への導線を表示する）
+    showDeckGuide('token'); show('view-decks');
+  } else {
+    show('view-decks');
+    try { await fetchDecksFromGitHub(); }
+    catch(e){ showDeckGuide('error', e.message); }
+  }
   if (ghReady()) await syncNow();
-})
-.catch(e => { $('deckErr').textContent = 'デッキの読み込みに失敗しました。' + e.message; show('view-decks'); });
+})();
 </script>
 </body>
 </html>
