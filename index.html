@@ -9,28 +9,41 @@
   --bg:#1e1e1e; --card:#2d2d2d; --border:#404040; --text:#e0e0e0; --muted:#a0a0a0;
   --accent:#4ec9b0; --success:#b5cea8; --warning:#f14c4c; --normal:#569cd6; --input:#3c3c3c;
 }
+body.rpg{--bg:#0f0f1a;--card:#1a1a2e;--border:#3b3b6d;--text:#f0f0f5;--muted:#9494b8;--accent:#ffd700;--success:#00ffcc;--warning:#ff4757;--normal:#3498db;--input:#242438}
+body.souls{--bg:#12100e;--card:#1c1917;--border:#4a413b;--text:#e6dbc9;--muted:#8c8275;--accent:#e65100;--success:#48c9b0;--warning:#a93226;--normal:#d35400;--input:#282420}
+body.persona{--bg:#0c0c0c;--card:#191919;--border:#3d3d3d;--text:#f5f5f5;--muted:#9c9c9c;--accent:#e60012;--success:#2fd673;--warning:#ff7a1a;--normal:#57a7ff;--input:#242424}
+body.zelda{--bg:#0d1b1e;--card:#173034;--border:#2f4f52;--text:#e9f2e7;--muted:#96ada0;--accent:#5ec8e5;--success:#8bc34a;--warning:#ef5350;--normal:#d9b45b;--input:#1f3d40}
+body.genshin{--bg:#f2ecdc;--card:#fbf8ef;--border:#d9cfb4;--text:#3c4048;--muted:#8d8672;--accent:#a87f2d;--success:#4e9a68;--warning:#cf5246;--normal:#5b7fa6;--input:#fffdf4}
+body.nier{--bg:#d3cfba;--card:#e2ddc9;--border:#a8a38d;--text:#454138;--muted:#7c7767;--accent:#8c4a32;--success:#5f7052;--warning:#b03a2e;--normal:#5d6d7e;--input:#eae6d2}
+body.doubutsu{--bg:#f6f1de;--card:#fffdf0;--border:#cfdfb4;--text:#59523d;--muted:#9c9377;--accent:#4f9e5f;--success:#35a06b;--warning:#e0684b;--normal:#4a90c2;--input:#fdfaf0}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;min-height:100vh;display:flex;flex-direction:column}
-header{padding:14px 16px 8px;display:flex;align-items:center;gap:10px}
-header h1{font-size:19px;margin:0;font-weight:800}
+body,.card,.item,.modebtn,.add,.pill{transition:background-color .35s ease,border-color .35s ease,color .35s ease}
+header{padding:10px 14px 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+header h1{font-size:17px;margin:0}
 header .sp{flex:1}
-button{font-family:inherit}
+button{font-family:inherit;transition:transform .08s ease,background-color .2s ease,border-color .2s ease,color .2s ease;touch-action:manipulation}
+button:active{transform:scale(.965)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+select,input,textarea{background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px;font-size:15px}
+#themeSel{width:88px;font-size:13px;padding:2px}
 .iconbtn{background:none;border:1px solid var(--border);border-radius:10px;color:var(--muted);padding:7px 9px;cursor:pointer;line-height:0}
 .iconbtn svg{width:20px;height:20px;display:block}
-main{flex:1;padding:6px 14px 28px;max-width:720px;width:100%;margin:0 auto}
+main{flex:1;display:flex;flex-direction:column;padding:12px 14px 28px;gap:10px;max-width:720px;width:100%;margin:0 auto}
 .view{display:none}
 .view.on{display:block}
-.stats{font-size:13px;color:var(--accent);font-weight:700;text-align:center;padding:4px 2px 10px}
-.item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
-.item .ttl{font-size:17px;font-weight:800}
-.item .sub{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.5}
-.item .meta{color:var(--accent);font-size:12px;margin-top:5px;font-weight:700}
-.modebtn{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;color:var(--text);cursor:pointer}
-.modebtn .t{font-size:16px;font-weight:800}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.view.on{animation:fadeUp .25s ease-out}
+.stats{font-size:13px;color:var(--accent);font-weight:700;padding:0 2px;text-align:center}
+.item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer;animation:fadeUp .3s ease-out backwards}
+.item .ttl{font-size:16px;font-weight:700}
+.item .sub{color:var(--muted);font-size:13px;margin-top:2px;line-height:1.5}
+.item .meta{color:var(--accent);font-size:12px;margin-top:2px}
+.modebtn{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;color:var(--text);cursor:pointer}
+.modebtn .t{font-size:15px;font-weight:700}
 .modebtn .d{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.5}
 .modebtn:disabled{opacity:.45;cursor:default}
-select{background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px;font-size:15px;width:100%;margin-bottom:12px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 18px;position:relative}
 .qmeta{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .qunit{font-size:12px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px}
@@ -40,7 +53,7 @@ select{background:var(--input);color:var(--text);border:1px solid var(--border);
 .starbtn.on{color:var(--accent)}
 .qtext{font-size:19px;line-height:1.6;font-weight:700;white-space:pre-line}
 .choices{margin-top:18px;display:flex;flex-direction:column;gap:10px}
-.choice{text-align:left;background:var(--input);border:1px solid var(--border);border-radius:12px;padding:13px 14px;color:var(--text);font-size:16px;cursor:pointer;line-height:1.5}
+.choice{text-align:left;background:var(--input);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:16px;cursor:pointer;line-height:1.5}
 .choice:disabled{cursor:default}
 .choice.correct{border-color:var(--success);color:var(--success);font-weight:800}
 .choice.wrong{border-color:var(--warning);color:var(--warning);font-weight:800}
@@ -56,34 +69,43 @@ select{background:var(--input);color:var(--text);border:1px solid var(--border);
 .favprompt.on{display:block}
 .favprompt button{margin-top:8px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer}
 .qnav{display:flex;gap:10px;margin-top:16px}
-.navbtn{flex:1;padding:13px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:800;cursor:pointer}
+.navbtn{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:700;cursor:pointer}
 .navbtn:disabled{opacity:.4;cursor:default}
-.bar{height:5px;background:var(--input);border-radius:999px;margin-top:9px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--accent);border-radius:999px}
-.plainbtn{display:block;width:100%;padding:13px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;margin-top:10px}
+.bar{height:10px;background:var(--input);border-radius:6px;margin-top:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.plainbtn{display:block;width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;margin-top:10px}
 .result-score{font-size:22px;font-weight:800;text-align:center;padding:16px 0 6px}
 .missitem{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:14px;line-height:1.6}
 .missitem .a{color:var(--success);font-weight:700}
 .missitem button{margin-top:6px;background:none;border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:700;cursor:pointer}
-.note{font-size:13px;color:var(--muted);line-height:1.8}
+.note{font-size:12px;color:var(--muted);line-height:1.6}
 .note b{color:var(--text)}
 .err{color:var(--warning);font-size:14px;line-height:1.7;padding:12px 0}
 h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
-.pill{background:none;border:1px solid var(--border);border-radius:999px;color:var(--muted);padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
-.pill.ok{color:var(--accent);border-color:var(--accent)}
+.pill{border:1px solid var(--border);background:var(--card);color:var(--accent);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .pill.err{color:var(--warning);border-color:var(--warning)}
-.form label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px;font-weight:700}
-.form input{width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:15px}
-.form .rowbtns{display:flex;gap:10px;margin-top:14px}
-.form .rowbtns button{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;font-weight:700;cursor:pointer}
-#ghStatus{font-size:13px;color:var(--accent);margin-top:10px;line-height:1.6}
+.add{display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+.add .rowbtns{display:flex;gap:8px;flex-wrap:wrap}
+.add button{background:var(--input);color:var(--accent);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:15px;font-weight:800;cursor:pointer}
+#ghStatus{font-size:12px;color:var(--muted);line-height:1.6}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <header>
-  <h1 id="hdrTitle">問題アプリ</h1>
+  <h1><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> <span id="hdrTitle">問題アプリ</span></h1>
   <div class="sp"></div>
-  <button class="pill" id="syncPill">同期 未設定</button>
+  <button class="pill" id="syncPill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 未設定</button>
+  <select id="themeSel" aria-label="テーマ">
+    <option value="">ダーク</option>
+    <option value="rpg">レトロ</option>
+    <option value="souls">ソウル</option>
+    <option value="persona">レッド</option>
+    <option value="zelda">ティール</option>
+    <option value="genshin">アイボリー</option>
+    <option value="nier">セピア</option>
+    <option value="doubutsu">パステル</option>
+  </select>
   <button class="iconbtn" id="btnAbout" title="設定・このアプリについて" aria-label="設定・このアプリについて">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/></svg>
   </button>
@@ -150,24 +172,20 @@ h2.sec{font-size:15px;margin:20px 0 8px;color:var(--muted)}
 
   <!-- 設定・このアプリについて -->
   <section class="view" id="view-about">
-    <div class="card" style="cursor:default">
-      <div class="note"><b>GitHub 同期（進捗の保存先）</b></div>
-      <div class="form">
-        <label>owner</label>
-        <input id="ghOwner" type="text" autocomplete="off">
-        <label>repo（進捗の保存先リポジトリ）</label>
-        <input id="ghRepo" type="text" autocomplete="off">
-        <label>branch</label>
-        <input id="ghBranch" type="text" autocomplete="off">
-        <label>GitHub トークン</label>
-        <input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_...">
-        <div class="rowbtns">
-          <button id="ghSave">保存して同期</button>
-          <button id="ghSyncNow">今すぐ同期</button>
-        </div>
-        <div id="ghStatus"></div>
+    <form class="add" id="ghForm">
+      <div><b><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> GitHub同期</b> <span class="note">進捗は quiz_progress.json ／ デッキは quiz_decks フォルダ（どちらも保存先リポジトリ内）</span></div>
+      <input id="ghOwner" type="text" autocomplete="off" placeholder="GitHubユーザー名（owner）">
+      <input id="ghRepo" type="text" autocomplete="off" placeholder="リポジトリ名（Private）">
+      <input id="ghToken" type="password" autocomplete="off" placeholder="トークン（Contents: Read and write）">
+      <input id="ghBranch" type="text" autocomplete="off" placeholder="ブランチ（空欄なら main）">
+      <div class="rowbtns">
+        <button type="button" id="ghSave">設定を保存</button>
+        <button type="button" id="ghSyncNow">今すぐ同期</button>
       </div>
-      <div class="note" style="margin-top:16px">
+      <div class="note" id="ghStatus">未設定：ローカル保存のみで動作中</div>
+    </form>
+    <div class="card" style="cursor:default;margin-top:12px">
+      <div class="note">
         <p>進捗（お気に入り・復習の間隔・回答履歴）は、上のリポジトリの <b>quiz_progress.json</b> に保存されます。初期値は単語アプリと同じ保存先（Shuka314 / app-data）です。トークンが未設定の間は、この端末の中（localStorage）にだけ保存されます。</p>
         <p><b>デッキも同じ場所にあります</b>：問題デッキは他人に見られないよう、公開リポジトリには置かず、同じプライベートリポジトリの <b>quiz_decks</b> フォルダに置いてあります。読み込みには上のトークン（進捗の同期と共通）を使います。トークンが未設定だとデッキは読めません（一度読み込んだデッキは端末にキャッシュされ、次回はキャッシュが先に表示されます）。</p>
         <p><b>トークンの作り方</b>：GitHub の Settings → Developer settings → Personal access tokens → Fine-grained tokens で、Repository access を app-data だけにし、Permissions の Contents を Read and write にして発行します。単語アプリで使っているトークンが app-data にアクセスできるものなら、そのまま同じものを貼れます。トークンはこの端末のブラウザ内にだけ保存され、GitHub 以外には送られません。</p>
@@ -558,15 +576,22 @@ function sameState(a, b){ return canonState(a) === canonState(b); }
 function pendingSync(){ if (!ghBase) return !sameState(progressSnapshot(), { favs:{}, srs:{}, hist:{} }); return !sameState(progressSnapshot(), ghBase.state); }
 
 let syncBusy = false, syncErr = '', lastSync = 0;
-function ghStatus(msg){ const el = $('ghStatus'); if (el) el.textContent = msg; }
+const svgIc = (p, s) => '<svg width="' + (s || 15) + '" height="' + (s || 15) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true">' + p + '</svg>';
+const ICONS = {
+  cloud: svgIc('<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>'),
+  refresh: svgIc('<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>'),
+  alert: svgIc('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+  up: svgIc('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>')
+};
+function ghStatus(msg){ const el = $('ghStatus'); if (el) el.innerHTML = msg.replace(/^☁ /, ICONS.cloud + ' ').replace(/^⚠ /, ICONS.alert + ' '); }
 function syncUi(){
   const p = $('syncPill'); if (!p) return;
-  p.classList.remove('ok', 'err');
-  if (!ghReady()) p.textContent = '同期 未設定';
-  else if (syncBusy) p.textContent = '同期中…';
-  else if (syncErr){ p.textContent = '同期 失敗（タップで再試行）'; p.classList.add('err'); }
-  else if (pendingSync()) p.textContent = '未送信あり（タップで同期）';
-  else { p.textContent = '同期済み'; p.classList.add('ok'); }
+  p.classList.remove('err');
+  if (!ghReady()) p.innerHTML = ICONS.cloud + ' 未設定';
+  else if (syncBusy) p.innerHTML = ICONS.refresh + ' 同期中…';
+  else if (syncErr){ p.innerHTML = ICONS.alert + ' 失敗（タップで再試行）'; p.classList.add('err'); }
+  else if (pendingSync()) p.innerHTML = ICONS.up + ' 未送信あり（タップで同期）';
+  else p.innerHTML = ICONS.cloud + ' 同期済み';
 }
 async function ghApi(method, payload){
   const url = 'https://api.github.com/repos/' + ghCfg.owner + '/' + ghCfg.repo + '/contents/' + PROGRESS_FILE + (method === 'GET' ? ('?ref=' + (ghCfg.branch || 'main') + '&_=' + Date.now()) : '');
@@ -650,10 +675,10 @@ async function syncNow(){
       }
     }
     lastSync = Date.now();
-    ghStatus('同期完了 ' + new Date().toLocaleTimeString());
+    ghStatus('☁ 同期済み ' + new Date().toLocaleTimeString());
   } catch(e){
     syncErr = e.message || 'error';
-    ghStatus('同期失敗（' + syncErr + '）。owner・repo・トークンの権限を確認してください。');
+    ghStatus('⚠ 同期失敗（' + syncErr + '）。owner・repo・トークンの権限を確認してください。');
   }
   syncBusy = false; syncUi();
   renderDeckList();
@@ -728,6 +753,14 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden && ghReady() && !syncBusy && (pendingSync() || Date.now() - lastSync > 60000)) syncNow();
 });
 window.addEventListener('online', () => { if (ghReady() && !syncBusy) syncNow(); });
+
+// ---------- テーマ（単語アプリと同じ配色セット。初期値はソウル） ----------
+let quizTheme = 'souls';
+try { quizTheme = localStorage.getItem('quizTheme') || 'souls'; } catch(e){}
+function paintTheme(){ document.body.className = quizTheme; const s = $('themeSel'); if (s) s.value = quizTheme; }
+$('themeSel').addEventListener('change', e => { quizTheme = e.target.value; try { localStorage.setItem('quizTheme', quizTheme); } catch(err){} paintTheme(); });
+paintTheme();
+$('ghForm').addEventListener('submit', e => e.preventDefault());
 
 // ---------- 起動 ----------
 (async function boot(){
