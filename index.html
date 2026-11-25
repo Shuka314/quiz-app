@@ -111,6 +111,17 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
 .sum-table th{background:var(--input);font-weight:700}
 .sum-table td:first-child{font-weight:600}
 .sum-start{border-color:var(--accent);color:var(--accent)}
+#sumStats{margin-top:10px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.subbtn{background:var(--input);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 14px;font-size:14px;font-weight:700;cursor:pointer}
+.subbtn:disabled{opacity:.4;cursor:default}
+.qrow{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start;animation:fadeUp .3s ease-out backwards}
+.qrow .qn{font-weight:800;color:var(--muted);white-space:nowrap}
+.qrow .qt{flex:1;font-size:14px;line-height:1.55}
+.qmark{font-size:12px;font-weight:800;border-radius:999px;padding:2px 9px;white-space:nowrap;border:1px solid var(--border);color:var(--muted)}
+.qmark.ok{color:var(--success);border-color:var(--success)}
+.qmark.ng{color:var(--warning);border-color:var(--warning)}
+#qlistUnit{margin-bottom:12px}
 .pill{border:1px solid var(--border);background:var(--card);color:var(--accent);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .pill.err{color:var(--warning);border-color:var(--warning)}
 .add{display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
@@ -168,6 +179,8 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
     <div class="backbar"><button class="backbtn" id="btnSumTopBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg><span id="sumBackLabel">章一覧</span></button></div>
     <div class="card">
       <div class="sum-unit" id="sumUnit"></div>
+      <div class="stats" id="sumStats"></div>
+      <div class="bar"><i id="sumBarFill"></i></div>
       <p class="sum-intro" id="sumIntro"></p>
       <h3 class="sum-sec">種類と全体像</h3>
       <ul class="sum-list" id="sumMap"></ul>
@@ -178,6 +191,14 @@ h3.sum-sec{font-size:14px;margin:18px 0 6px;color:var(--accent)}
       <ul class="sum-list" id="sumTips"></ul>
     </div>
     <button class="plainbtn sum-start" id="btnSumStart">この章の問題を解く</button>
+    <button class="plainbtn" id="btnSumRestart" style="display:none">最初から解く</button>
+  </section>
+
+  <!-- 問題一覧 -->
+  <section class="view" id="view-qlist">
+    <div class="backbar"><button class="backbtn" id="btnQlistBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>章一覧</button></div>
+    <div class="sum-unit" id="qlistUnit"></div>
+    <div id="qlistBox"></div>
   </section>
 
   <!-- 出題 -->
@@ -291,7 +312,16 @@ function recordHist(deckId, qid, correct){
   state.hist[deckId] = state.hist[deckId] || {};
   const h = state.hist[deckId][qid] || { seen: 0, correct: 0 };
   h.seen += 1; if (correct) h.correct += 1;
+  h.last = correct; // 前回の結果（問題一覧の印に使う。旧データには無いので qStatus 側で補う）
   state.hist[deckId][qid] = h;
+}
+// 問題ごとの状態： 'todo' 未回答 / 'ok' 前回正解 / 'ng' 前回不正解。
+// last が無い旧データでは、1回でも間違えていれば 'ng' として扱う。
+function qStatus(deckId, qid){
+  const h = (state.hist[deckId] || {})[qid];
+  if (!h || !(h.seen > 0)) return 'todo';
+  if (h.last !== undefined && h.last !== null) return h.last ? 'ok' : 'ng';
+  return (h.correct || 0) < h.seen ? 'ng' : 'ok';
 }
 
 // ---------- デッキ読み込み（GitHub Contents API・プライベート保存） ----------
@@ -473,6 +503,15 @@ function unitStats(deck, unit){
   });
   return { total: qs.length, favN: favN, answeredQ: answeredQ, seen: seen, correct: correct, rate: seen > 0 ? Math.round(correct / seen * 100) : null };
 }
+// 回答記録（hist）から、リスト内の最初の未回答問題の位置を返す。全問回答済みなら -1。
+function firstUnansweredIdx(deck, list){
+  const hist = state.hist[deck.id] || {};
+  for (let i = 0; i < list.length; i++){
+    const h = hist[list[i].id];
+    if (!h || !(h.seen > 0)) return i;
+  }
+  return -1;
+}
 function statsLine(st){
   let s = '全' + st.total + '問 ／ 回答済み ' + st.answeredQ + '問';
   if (st.rate !== null) s += ' ／ 正答率 ' + st.rate + '%';
@@ -525,22 +564,39 @@ function renderChapterList(){
     div.querySelector('.ttl').textContent = label;
     div.querySelector('.meta').textContent = statsLine(st);
     div.querySelector('.bar i').style.width = st.total ? Math.round(st.answeredQ / st.total * 100) + '%' : '0%';
-    if (unit && curDeck.summaries && curDeck.summaries[unit]){
+    if (unit){
       const row = document.createElement('div');
-      row.className = 'sumrow';
-      const b = document.createElement('button');
-      b.className = 'sumbtn';
-      b.textContent = 'まとめを読む';
-      b.addEventListener('click', e => { e.stopPropagation(); openSummary(unit); });
-      row.appendChild(b);
+      row.className = 'sumrow btnrow';
+      if (curDeck.summaries && curDeck.summaries[unit]){
+        const b = document.createElement('button');
+        b.className = 'sumbtn';
+        b.textContent = 'まとめを読む';
+        b.addEventListener('click', e => { e.stopPropagation(); openSummary(unit); });
+        row.appendChild(b);
+      }
+      const qs = curDeck.questions.filter(q => q.unit === unit);
+      const label = '順番モード（' + unitLabel(unit) + '）';
+      const restart = { type: 'unit', unit: unit };
+      const addSub = (txt, fn) => {
+        const b = document.createElement('button');
+        b.className = 'subbtn';
+        b.textContent = txt;
+        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
+        row.appendChild(b);
+        return b;
+      };
+      addSub('はじめから', () => startSession(qs, label, 'seq:' + unit, restart, true, 0));
+      const cont = addSub('続きから', () => startSeq(qs, label, 'seq:' + unit, restart));
+      if (st.answeredQ === 0) cont.disabled = true; // 未着手の章では「続きから」は無効表示
+      addSub('問題一覧', () => openQList(unit));
       div.appendChild(row);
     }
     div.addEventListener('click', onClick);
     box.appendChild(div);
   };
-  mk('すべての章', unitStats(curDeck, null), () => startSession(curDeck.questions.slice(), '順番モード（すべての章）', 'seqall', { type: 'all' }), null, 'allchap');
+  mk('すべての章', unitStats(curDeck, null), () => startSeq(curDeck.questions.slice(), '順番モード（すべての章）', 'seqall', { type: 'all' }), null, 'allchap');
   deckUnits(curDeck).forEach(u => {
-    mk(unitLabel(u), unitStats(curDeck, u), () => startSession(curDeck.questions.filter(q => q.unit === u), '順番モード（' + unitLabel(u) + '）', 'seq:' + u, { type: 'unit', unit: u }), u);
+    mk(unitLabel(u), unitStats(curDeck, u), () => startSeq(curDeck.questions.filter(q => q.unit === u), '順番モード（' + unitLabel(u) + '）', 'seq:' + u, { type: 'unit', unit: u }), u);
   });
 }
 // ---------- 章のまとめ ----------
@@ -553,6 +609,29 @@ function openSummary(unit, from){
   sumReturn = from || 'deck';
   $('sumBackLabel').textContent = sumReturn === 'quiz' ? '問題に戻る' : '章一覧';
   $('sumUnit').textContent = unitLabel(unit) + ' のまとめ';
+  // この章の進み具合（章一覧と同じ集計）と、状態に応じた開始ボタンの文言
+  const sst = unitStats(curDeck, unit);
+  $('sumStats').textContent = statsLine(sst);
+  $('sumBarFill').style.width = sst.total ? Math.round(sst.answeredQ / sst.total * 100) + '%' : '0%';
+  const sulist = curDeck.questions.filter(q => q.unit === unit);
+  const sulive = sessions[skey(curDeck.id, 'seq:' + unit)];
+  const startBtn = $('btnSumStart'), rstBtn = $('btnSumRestart');
+  if (sulive && !sulive.done){
+    startBtn.textContent = '続きから解く（' + (sulive.idx + 1) + '問目から）';
+    rstBtn.style.display = 'block';
+  } else if (sst.answeredQ === 0){
+    startBtn.textContent = 'この章の問題を解く';
+    rstBtn.style.display = 'none';
+  } else {
+    const fu = firstUnansweredIdx(curDeck, sulist);
+    if (fu < 0){
+      startBtn.textContent = 'この章を解き直す';
+      rstBtn.style.display = 'none';
+    } else {
+      startBtn.textContent = '続きから解く（' + (fu + 1) + '問目から）';
+      rstBtn.style.display = 'block';
+    }
+  }
   $('sumIntro').textContent = s.intro || '';
   const fill = (id, arr) => {
     const ul = $(id); ul.innerHTML = '';
@@ -594,8 +673,48 @@ function openSummary(unit, from){
   window.scrollTo(0, 0);
 }
 $('btnSumStart').addEventListener('click', () => {
-  if (sumUnit) startSession(curDeck.questions.filter(q => q.unit === sumUnit), '順番モード（' + unitLabel(sumUnit) + '）', 'seq:' + sumUnit, { type: 'unit', unit: sumUnit });
+  if (sumUnit) startSeq(curDeck.questions.filter(q => q.unit === sumUnit), '順番モード（' + unitLabel(sumUnit) + '）', 'seq:' + sumUnit, { type: 'unit', unit: sumUnit });
 });
+$('btnSumRestart').addEventListener('click', () => {
+  if (sumUnit) startSession(curDeck.questions.filter(q => q.unit === sumUnit), '順番モード（' + unitLabel(sumUnit) + '）', 'seq:' + sumUnit, { type: 'unit', unit: sumUnit }, true, 0);
+});
+// ---------- 問題一覧（問題ごとの状態表示・タップでその問題へ） ----------
+let qlUnit = null;
+function openQList(unit){
+  qlUnit = unit;
+  $('qlistUnit').textContent = unitLabel(unit);
+  const box = $('qlistBox'); box.innerHTML = '';
+  const list = curDeck.questions.filter(q => q.unit === unit);
+  list.forEach((q, i) => {
+    const row = document.createElement('div');
+    row.className = 'qrow';
+    const n = document.createElement('span'); n.className = 'qn'; n.textContent = (i + 1) + '.';
+    const t = document.createElement('span'); t.className = 'qt'; t.textContent = q.question;
+    const m = document.createElement('span');
+    const st = qStatus(curDeck.id, q.id);
+    m.className = 'qmark' + (st === 'todo' ? '' : ' ' + st);
+    m.textContent = st === 'todo' ? '未回答' : (st === 'ok' ? '✓ 正解' : '✕ 不正解');
+    row.appendChild(n); row.appendChild(t); row.appendChild(m);
+    row.addEventListener('click', () => startAtQuestion(unit, i));
+    box.appendChild(row);
+  });
+  show('view-qlist');
+}
+function startAtQuestion(unit, idx){
+  const list = curDeck.questions.filter(q => q.unit === unit);
+  const key = 'seq:' + unit;
+  const live = sessions[skey(curDeck.id, key)];
+  if (live && !live.done){
+    session = live;
+    session.idx = idx;
+    session.lastUsed = Date.now();
+    show('view-quiz');
+    renderQuestion();
+  } else {
+    startSession(list, '順番モード（' + unitLabel(unit) + '）', key, { type: 'unit', unit: unit }, true, idx);
+  }
+}
+$('btnQlistBack').addEventListener('click', () => openDeck(curDeck));
 $('btnSumTopBack').addEventListener('click', () => {
   if (sumReturn === 'quiz' && session && !session.done){ show('view-quiz'); renderQuestion(); }
   else openDeck(curDeck);
@@ -628,18 +747,27 @@ function openDeck(d){
 // ---------- 出題 ----------
 function shuffle(a){ const r = a.slice(); for (let i = r.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; }
 function skey(deckId, key){ return deckId + '|' + key; }
-function startSession(list, modeLabel, key, restart, force){
+function startSession(list, modeLabel, key, restart, force, startIdx){
   if (!list.length) return;
   const k = key ? skey(curDeck.id, key) : null;
   if (!force && k && sessions[k] && !sessions[k].done){
     session = sessions[k]; // 未完了の同じセッションがあれば、回答状態を保ったまま再開する
   } else {
-    session = { list: list, idx: 0, modeLabel: modeLabel, answers: {}, key: key || null, deckId: curDeck.id, restart: restart || null, done: false };
+    session = { list: list, idx: startIdx || 0, modeLabel: modeLabel, answers: {}, key: key || null, deckId: curDeck.id, restart: restart || null, done: false };
     if (k) sessions[k] = session;
   }
   session.lastUsed = Date.now();
   show('view-quiz');
   renderQuestion();
+}
+// 順番モードの開始：進行中セッションがあればそれを再開し、無ければ回答記録から
+// 最初の未回答問題の位置を求めて始める（アプリを開き直しても続きからになる）。
+// 全問回答済みの場合は最初から（解き直し）。
+function startSeq(list, modeLabel, key, restart){
+  const k = key ? skey(curDeck.id, key) : null;
+  if (k && sessions[k] && !sessions[k].done){ startSession(list, modeLabel, key, restart); return; }
+  const fu = firstUnansweredIdx(curDeck, list);
+  startSession(list, modeLabel, key, restart, true, fu > 0 ? fu : 0);
 }
 function renderQuestion(){
   const q = session.list[session.idx];
